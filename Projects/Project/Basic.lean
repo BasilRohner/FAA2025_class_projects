@@ -4,6 +4,12 @@
   Authors: Flurin Steck, Basil Rohner
 -/
 
+/-
+  "I don't make mistakes."
+-/
+
+-- todo: naming of the namespaces it terrible
+
 import Mathlib.Tactic
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.ZMod.Basic
@@ -18,12 +24,13 @@ class Family (n : ℕ) where
   elems : Finset ⟦n⟧
   card := elems.card
 
-class L_Family (n s : ℕ) extends Family n where
+class L_Family (n : ℕ) extends Family n where
   L : Finset ℕ
-  L_size : L.card = s
+  s := L.card
   L_intersecting : ∀ F1 ∈ elems, ∀ F2 ∈ elems, F1 ≠ F2 → (F1 ∩ F2).card ∈ L
 
-class k_L_Family (n s k : ℕ) extends L_Family n s where
+class k_L_Family (n : ℕ) extends L_Family n where
+  k : ℕ
   k_bounded : ∀ F ∈ elems, F.card = k
 
 class L_p_Family (n : ℕ) extends Family n where
@@ -35,6 +42,10 @@ class L_p_Family (n : ℕ) extends Family n where
   L_p_intersecting :
     (∀ F ∈ elems, F.card.mod p ∉ L) ∧
     (∀ F1 ∈ elems, ∀ F2 ∈ elems, F1 ≠ F2 → (F1 ∩ F2).card.mod p ∈ L)
+
+class k_L_p_Family (n : ℕ) extends L_p_Family n where
+  k : ℕ
+  k_bounded : ∀ F ∈ elems, F.card = k
 
 end Families
 
@@ -96,4 +107,18 @@ theorem Frankl_Wilson {n : ℕ} (F : L_p_Family n) : F.card ≤ ∑ i ∈ Finset
   sorry
   -- might not be that much more effort for this simple lemma even
 
+theorem Ray_Chaudhuri_Wilson {n : ℕ} (F : k_L_p_Family n) : (∀ l ∈ F.L, l < F.k) → F.card ≤ n.choose F.s := by
+  intro h
+  -- very similar to the above
+  sorry
+
+theorem Alon_Babai_Suzuki {n : ℕ} (F : k_L_p_Family n) : F.k.mod F.p ∉ F.L ∧ F.s ≤ (F.p-1) ∧ F.s + F.k ≤ n → F.card ≤ n.choose F.s := by
+  intro h
+  obtain ⟨h1, h2, h3⟩ := h
+  sorry
+
 end Lemmas
+
+namespace Result
+
+end Result
