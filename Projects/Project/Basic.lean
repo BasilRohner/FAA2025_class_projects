@@ -15,6 +15,9 @@ import Mathlib.Data.Finset.Basic
 import Mathlib.Data.ZMod.Basic
 import Mathlib.Algebra.Polynomial.Basic
 import Mathlib.Algebra.MvPolynomial.Basic
+import Mathlib.Combinatorics.SimpleGraph.Clique
+
+-- set_option diagnostics true
 
 notation "⟦"n"⟧" => Finset (Fin n)
 
@@ -60,12 +63,15 @@ namespace Constructions
 class Vec {α : Type*} (n : ℕ) where
   elem : Fin n → α
 
+@[simp]
 instance Char_Vec {R : Type*} [Semiring R] {n : ℕ} (S : ⟦n⟧) : @Vec R n where
   elem := fun i ↦ if i ∈ S then (1 : R) else (0 : R)
 
+@[simp]
 def vec_dot {R : Type*} [Semiring R] {n : ℕ} (v w : @Vec R n) : R :=
   ∑ i : Fin n, v.elem i * w.elem i
 
+@[simp]
 theorem char_vec_dot_inter {n : ℕ} (U W : ⟦n⟧) : vec_dot (Char_Vec U) (Char_Vec W) = (U ∩ W).card := by
   simp [Char_Vec, vec_dot, Finset.inter_comm]
 
@@ -76,9 +82,11 @@ namespace Lemmas
 open Families
 open Constructions
 
+@[simp]
 def f {n : ℕ} (F : L_p_Family n) (U V : ⟦n⟧) : ZMod F.p :=
   ∏ l ∈ F.L, (vec_dot (@Char_Vec (ZMod F.p) (by exact CommRing.toCommSemiring.toSemiring) n V) (@Char_Vec (ZMod F.p) (by exact CommRing.toCommSemiring.toSemiring) n U) - (l : ZMod F.p))
 
+@[simp]
 theorem Frankl_Wilson {n : ℕ} (F : L_p_Family n) : F.card ≤ ∑ i ∈ Finset.range (F.L.card + 1), n.choose i := by
   have : ∀ U ∈ F.elems, ∀ V ∈ F.elems, U ≠ V → f F U V = 0 := by
     intro U Uh V Vh UV
@@ -107,18 +115,73 @@ theorem Frankl_Wilson {n : ℕ} (F : L_p_Family n) : F.card ≤ ∑ i ∈ Finset
   sorry
   -- might not be that much more effort for this simple lemma even
 
+@[simp]
 theorem Ray_Chaudhuri_Wilson {n : ℕ} (F : k_L_p_Family n) : (∀ l ∈ F.L, l < F.k) → F.card ≤ n.choose F.s := by
   intro h
   -- very similar to the above
   sorry
 
-theorem Alon_Babai_Suzuki {n : ℕ} (F : k_L_p_Family n) : F.k.mod F.p ∉ F.L ∧ F.s ≤ (F.p-1) ∧ F.s + F.k ≤ n → F.card ≤ n.choose F.s := by
+@[simp]
+theorem Alon_Babai_Suzuki {n : ℕ} (F : k_L_p_Family n) :
+  (∀ U ∈ F.elems, U.card.mod F.p = F.k) ∧ F.k.mod F.p ∉ F.L ∧ F.s ≤ F.p - 1 ∧ F.s + F.k ≤ n
+  → F.card ≤ n.choose F.s := by
   intro h
   obtain ⟨h1, h2, h3⟩ := h
   sorry
 
 end Lemmas
 
+namespace Graph
+
+@[simp]
+def Diagonal_Ramsey {α : Type*} [Fintype α] (G : SimpleGraph α) [DecidableRel G.Adj] (n k : ℕ) : Prop :=
+  n = Fintype.card α
+  ∧ (∀ S, ¬G.IsNClique k S)
+  ∧ (∀ T, ¬Gᶜ.IsNClique k T)
+
+end Graph
+
 namespace Result
+
+open Graph
+
+@[simp]
+def vertices (p : ℕ) := { A : ⟦p^3⟧ // A.card = p^2 - 1 }
+
+@[simp]
+instance (p : ℕ) : Fintype (vertices p) :=
+  Subtype.fintype (fun A : ⟦p^3⟧ => A.card = p^2 - 1)
+
+@[simp]
+def Explicit_Ramsey_Graph (p : ℕ) : SimpleGraph (vertices p) :=
+  {
+    Adj := fun A B => (A.val ∩ B.val).card.mod p = p - 1 ∧ A.val ≠ B.val,
+    symm := by
+      intro V U h1
+      rw [Finset.inter_comm, ne_comm]
+      assumption
+    ,
+    loopless := by
+      intro x
+      simp
+  }
+
+@[simp]
+instance (p : ℕ) : DecidableRel (Explicit_Ramsey_Graph p).Adj := by
+  intro a b
+  simp [Explicit_Ramsey_Graph]
+  exact instDecidableAnd
+
+theorem Explicit_Ramsey_Graph_Correctness (p : ℕ) (hp : p.Prime) :
+    Diagonal_Ramsey (Explicit_Ramsey_Graph p) ((p^3).choose (p^2 - 1)) ((p^3).choose (p-1) + 1) := by
+  set n := (p^3).choose (p^2 - 1)
+  set k := ((p^3).choose (p-1) + 1)
+  simp
+  constructor
+  · rfl
+  · constructor
+    · intro S
+      sorry
+    · sorry
 
 end Result
