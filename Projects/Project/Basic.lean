@@ -12,10 +12,12 @@
 
 import Mathlib.Tactic
 import Mathlib.Data.Finset.Basic
+import Mathlib.Data.Nat.Basic
 import Mathlib.Data.ZMod.Basic
 import Mathlib.Algebra.Polynomial.Basic
 import Mathlib.Algebra.MvPolynomial.Basic
 import Mathlib.Combinatorics.SimpleGraph.Clique
+import Mathlib.Analysis.SpecialFunctions.Pow.NthRootLemmas
 
 -- set_option diagnostics true
 
@@ -35,6 +37,21 @@ class L_Family (n : ℕ) extends Family n where
 class k_L_Family (n : ℕ) extends L_Family n where
   k : ℕ
   k_bounded : ∀ F ∈ elems, F.card = k
+
+-- Constructor for k_L_Family
+def mk_k_L_Family {n : ℕ}
+  (elems : Finset ⟦n⟧)
+  (L : Finset ℕ)
+  (k : ℕ)
+  (hL : ∀ F1 ∈ elems, ∀ F2 ∈ elems, F1 ≠ F2 → (F1 ∩ F2).card ∈ L)
+  (hk : ∀ F ∈ elems, F.card = k) :
+  k_L_Family n :=
+{ elems := elems,
+  L := L,
+  k := k,
+  L_intersecting := hL,
+  k_bounded := hk }
+
 
 class L_p_Family (n : ℕ) extends Family n where
   L : Finset ℕ
@@ -116,7 +133,7 @@ theorem Frankl_Wilson {n : ℕ} (F : L_p_Family n) : F.card ≤ ∑ i ∈ Finset
   -- might not be that much more effort for this simple lemma even
 
 @[simp]
-theorem Ray_Chaudhuri_Wilson {n : ℕ} (F : k_L_p_Family n) : (∀ l ∈ F.L, l < F.k) → F.card ≤ n.choose F.s := by
+theorem Ray_Chaudhuri_Wilson {n : ℕ} (F : k_L_Family n) : (∀ l ∈ F.L, l < F.k) → F.card ≤ n.choose F.s := by
   intro h
   -- very similar to the above
   sorry
@@ -144,13 +161,15 @@ end Graph
 namespace Result
 
 open Graph
+open Set
 
 @[simp]
-def vertices (p : ℕ) := { A : ⟦p^3⟧ // A.card = p^2 - 1 }
+def  vertices (p : ℕ) : Type :=
+  { A : Finset (Fin (p^3)) // A.card = p^2 - 1 }
 
 @[simp]
 instance (p : ℕ) : Fintype (vertices p) :=
-  Subtype.fintype (fun A : ⟦p^3⟧ => A.card = p^2 - 1)
+  Subtype.fintype (fun A : Finset (Fin (p^3)) => A.card = p^2 - 1)
 
 @[simp]
 def Explicit_Ramsey_Graph (p : ℕ) : SimpleGraph (vertices p) :=
@@ -172,16 +191,86 @@ instance (p : ℕ) : DecidableRel (Explicit_Ramsey_Graph p).Adj := by
   simp [Explicit_Ramsey_Graph]
   exact instDecidableAnd
 
+
 theorem Explicit_Ramsey_Graph_Correctness (p : ℕ) (hp : p.Prime) :
     Diagonal_Ramsey (Explicit_Ramsey_Graph p) ((p^3).choose (p^2 - 1)) ((p^3).choose (p-1) + 1) := by
   set n := (p^3).choose (p^2 - 1)
   set k := ((p^3).choose (p-1) + 1)
+  have hhp : p ≥  2 := by  { -- Very ugly
+    cases p
+    contradiction
+    rename_i p2
+    cases p2
+    contradiction
+    omega
+  }
   simp
   constructor
   · rfl
   · constructor
-    · intro S
-      sorry
-    · sorry
+    · intro S h
+      grw[SimpleGraph.isNClique_iff, SimpleGraph.isClique_iff] at h
+      obtain ⟨h_clique, h_card⟩ := h
+      let L : Finset ℕ := (Finset.range (p - 1)).image (fun i => (i + 1) * p - 1)
+      let S_val : Finset (Finset (Fin (p^3))) := S.image Subtype.val
+      let fam : Families.k_L_Family (p^3) := by
+        refine{
+          elems := S_val,
+          L := L,
+          k := p^2 - 1,
+          L_intersecting := by
+            intros F1 f1 F2 f2 hF
+            simp at h_clique
+            sorry
+          k_bounded := by
+            intro F hF
+            grind
+        }
+      have hf : (∀ l ∈ fam.L, l < fam.k) := by -- this should be MUCH easier imo
+        intros l h
+        dsimp[fam, L] at *
+        obtain ⟨i, hi, hl⟩ := Finset.mem_image.mp h
+        grw[<-hl]
+        simp at hi
+        sorry
 
+      apply Lemmas.Ray_Chaudhuri_Wilson at hf
+      dsimp[fam] at hf
+      have hL : L.card = p - 1 := by
+        sorry
+      have hS : S_val.card =  (p ^ 3).choose (p - 1) + 1 := by
+        sorry
+      grw[hL, hS] at hf
+      omega
+
+
+    · intros T h
+      grw[SimpleGraph.isNIndepSet_iff, SimpleGraph.isIndepSet_iff] at h
+      obtain ⟨h_ind, h_card⟩ := h
+      let L : Finset ℕ := (Finset.univ : Finset (Fin (p-1))).image Fin.val
+      let T_val : Finset (Finset (Fin (p^3))) := T.image Subtype.val
+      let fam : Families.k_L_p_Family (p^3) := by
+        refine{
+          elems := T_val,
+          L := L,
+          k := p^2 - 1,
+          L_p_intersecting := by
+            sorry
+          k_bounded := by
+            intro F hF
+            grind
+          p := p,
+          p_prime := hp,
+          p_neq_one := by
+            linarith
+        }
+      have hf : T_val.card ≤ (p ^ 3).choose L.card := by
+        apply Lemmas.Alon_Babai_Suzuki fam
+        sorry
+      have hL : L.card = p - 1 := by
+        sorry
+      have hT : T_val.card =  (p ^ 3).choose (p - 1) + 1 := by
+        sorry
+      grw[hL, hT] at hf
+      omega
 end Result
