@@ -204,6 +204,7 @@ theorem Explicit_Ramsey_Graph_Correctness (p : ℕ) (hp : p.Prime) :
     contradiction
     omega
   }
+  have hp2 : p > 0 := by omega -- makes a few things easier
   simp
   constructor
   · rfl
@@ -232,14 +233,27 @@ theorem Explicit_Ramsey_Graph_Correctness (p : ℕ) (hp : p.Prime) :
         obtain ⟨i, hi, hl⟩ := Finset.mem_image.mp h
         grw[<-hl]
         simp at hi
-        sorry
+
 
       apply Lemmas.Ray_Chaudhuri_Wilson at hf
       dsimp[fam] at hf
       have hL : L.card = p - 1 := by
-        sorry
-      have hS : S_val.card =  (p ^ 3).choose (p - 1) + 1 := by
-        sorry
+        have help : L.card = (Finset.range (p-1)).card  := by -- some odd Meta variable issue
+          apply Finset.card_image_of_injective
+          grw[Function.Injective]
+          intros a_1 a_2 ha
+          rw [Nat.sub_eq_iff_eq_add, Nat.sub_add_cancel, Nat.add_mul, Nat.add_mul, Nat.add_right_cancel_iff] at ha
+          apply Nat.mul_right_cancel hp2 at ha
+          assumption
+          repeat {
+            grw[Nat.add_mul]
+            omega
+          }
+        grw[help]
+        exact Finset.card_range (p - 1)
+      have hS : S_val.card =  S.card := by
+        apply Finset.card_image_of_injective
+        exact Subtype.val_injective
       grw[hL, hS] at hf
       omega
 
@@ -255,10 +269,10 @@ theorem Explicit_Ramsey_Graph_Correctness (p : ℕ) (hp : p.Prime) :
           L := L,
           k := p^2 - 1,
           L_p_intersecting := by
-            sorry
+            sorry,
           k_bounded := by
             intro F hF
-            grind
+            grind,
           p := p,
           p_prime := hp,
           p_neq_one := by
@@ -266,11 +280,21 @@ theorem Explicit_Ramsey_Graph_Correctness (p : ℕ) (hp : p.Prime) :
         }
       have hf : T_val.card ≤ (p ^ 3).choose L.card := by
         apply Lemmas.Alon_Babai_Suzuki fam
+        constructor
         sorry
-      have hL : L.card = p - 1 := by
+        constructor
         sorry
-      have hT : T_val.card =  (p ^ 3).choose (p - 1) + 1 := by
+        constructor
         sorry
+        sorry
+      have hL : L.card =  p-1 := by
+        have help : L.card = (Finset.univ : Finset (Fin (p-1))).card  := by
+          apply Finset.card_image_of_injective
+          exact Fin.val_injective
+        grw[help, Finset.card_univ, Fintype.card_fin]
+      have hT : T_val.card =  T.card := by
+        apply Finset.card_image_of_injective
+        exact Subtype.val_injective
       grw[hL, hT] at hf
       omega
 end Result
