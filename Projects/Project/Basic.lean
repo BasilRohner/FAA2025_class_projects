@@ -287,7 +287,10 @@ theorem Explicit_Ramsey_Graph_Correctness (p : ℕ) (hp : p.Prime) :
             ,
           k_bounded := by
             intro F hF
-            sorry,
+            simp_all only [ge_iff_le, gt_iff_lt, not_and, Decidable.not_not, Finset.mem_image, Subtype.exists,
+              exists_and_right, exists_eq_right, k, T_val]
+            obtain ⟨w, h⟩ := hF
+            simp_all only,
           p := p,
           p_prime := hp,
           p_neq_one := by
@@ -306,13 +309,19 @@ theorem Explicit_Ramsey_Graph_Correctness (p : ℕ) (hp : p.Prime) :
       have hf : T_val.card ≤ (p ^ 3).choose L.card := by
         apply Lemmas.Alon_Babai_Suzuki fam
         constructor
-        aesop
-        aesop
+        simp_all only [gt_iff_lt, not_and, Decidable.not_not, le_refl, k, L, T_val, fam]
+        simp_all only [gt_iff_lt, not_and, Decidable.not_not, k, L, T_val, fam]
         apply Nat.le_of_succ_le
         apply  Nat.le_of_succ_le
         simp
-        grw[Nat.add_comm, Nat.add_assoc, Nat.sub_add_cancel, <-Nat.add_assoc, Nat.add_sub_cancel', Nat.pow_two]
-        sorry -- very easy
+        have help : p^3 = p * p * p := by linarith
+        grw[Nat.add_comm, Nat.add_assoc, Nat.sub_add_cancel, <-Nat.add_assoc, Nat.add_sub_cancel', Nat.pow_two, help]
+        nth_grw 1 [<-Nat.mul_one p]
+        grw[<-Nat.mul_add]
+        have help2 : (1 + p) ≤ p *p := by
+          sorry
+        grw[help2]
+        linarith
         grw[hhp]
         trivial
         grw[Nat.pow_two, hhp]
