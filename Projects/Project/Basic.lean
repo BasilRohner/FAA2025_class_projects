@@ -65,7 +65,7 @@ class L_p_Family (n : ℕ) extends Family n where
 
 class k_L_p_Family (n : ℕ) extends L_p_Family n where
   k : ℕ
-  k_bounded : ∀ F ∈ elems, F.card = k
+  k_bounded : ∀ F ∈ elems, (F.card.mod p) = (k.mod p)
 
 end Families
 
@@ -139,8 +139,7 @@ theorem Ray_Chaudhuri_Wilson {n : ℕ} (F : k_L_Family n) : (∀ l ∈ F.L, l < 
   sorry
 
 @[simp]
-theorem Alon_Babai_Suzuki {n : ℕ} (F : k_L_p_Family n) :
-  (∀ U ∈ F.elems, U.card.mod F.p = F.k) ∧ F.k.mod F.p ∉ F.L ∧ F.s ≤ F.p - 1 ∧ F.s + F.k ≤ n
+theorem Alon_Babai_Suzuki {n : ℕ} (F : k_L_p_Family n) : F.s ≤ F.p - 1 ∧ F.s + F.k ≤ n
   → F.card ≤ n.choose F.s := by
   intro h
   obtain ⟨h1, h2, h3⟩ := h
@@ -233,7 +232,14 @@ theorem Explicit_Ramsey_Graph_Correctness (p : ℕ) (hp : p.Prime) :
         obtain ⟨i, hi, hl⟩ := Finset.mem_image.mp h
         grw[<-hl]
         simp at hi
-
+        grw[Nat.pow_two, Nat.sub_lt_iff_lt_add, Nat.sub_add_cancel]
+        apply Nat.mul_lt_mul_of_pos_right
+        omega -- a lot of annoying remainder facts
+        assumption
+        simp
+        omega
+        grw[Nat.add_mul]
+        omega
 
       apply Lemmas.Ray_Chaudhuri_Wilson at hf
       dsimp[fam] at hf
@@ -269,32 +275,48 @@ theorem Explicit_Ramsey_Graph_Correctness (p : ℕ) (hp : p.Prime) :
           L := L,
           k := p^2 - 1,
           L_p_intersecting := by
-            sorry,
+            constructor
+            intros F hF
+            refine Finset.forall_mem_not_eq'.mp ?_
+            intro b hb
+            sorry
+            intros F1 hF1 F2 hF2 hF
+            refine mem_image_univ_iff_mem_range.mpr ?_
+            simp
+            sorry
+            ,
           k_bounded := by
             intro F hF
-            grind,
+            sorry,
           p := p,
           p_prime := hp,
           p_neq_one := by
             linarith
         }
-      have hf : T_val.card ≤ (p ^ 3).choose L.card := by
-        apply Lemmas.Alon_Babai_Suzuki fam
-        constructor
-        sorry
-        constructor
-        sorry
-        constructor
-        sorry
-        sorry
       have hL : L.card =  p-1 := by
         have help : L.card = (Finset.univ : Finset (Fin (p-1))).card  := by
           apply Finset.card_image_of_injective
           exact Fin.val_injective
         grw[help, Finset.card_univ, Fintype.card_fin]
+
       have hT : T_val.card =  T.card := by
         apply Finset.card_image_of_injective
         exact Subtype.val_injective
+
+      have hf : T_val.card ≤ (p ^ 3).choose L.card := by
+        apply Lemmas.Alon_Babai_Suzuki fam
+        constructor
+        aesop
+        aesop
+        apply Nat.le_of_succ_le
+        apply  Nat.le_of_succ_le
+        simp
+        grw[Nat.add_comm, Nat.add_assoc, Nat.sub_add_cancel, <-Nat.add_assoc, Nat.add_sub_cancel', Nat.pow_two]
+        sorry -- very easy
+        grw[hhp]
+        trivial
+        grw[Nat.pow_two, hhp]
+        trivial
       grw[hL, hT] at hf
       omega
 end Result
