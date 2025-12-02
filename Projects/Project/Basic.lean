@@ -191,6 +191,8 @@ instance (p : ℕ) : DecidableRel (Explicit_Ramsey_Graph p).Adj := by
   exact instDecidableAnd
 
 
+
+
 theorem Explicit_Ramsey_Graph_Correctness (p : ℕ) (hp : p.Prime) :
     Diagonal_Ramsey (Explicit_Ramsey_Graph p) ((p^3).choose (p^2 - 1)) ((p^3).choose (p-1) + 1) := by
   set n := (p^3).choose (p^2 - 1)
@@ -221,6 +223,14 @@ theorem Explicit_Ramsey_Graph_Correctness (p : ℕ) (hp : p.Prime) :
           L_intersecting := by
             intros F1 f1 F2 f2 hF
             simp at h_clique
+            simp_all only [ge_iff_le, gt_iff_lt, Finset.mem_image, Subtype.exists, exists_and_right, exists_eq_right,
+              ne_eq, Finset.mem_range, k, S_val, L]
+            obtain ⟨w, h⟩ := f1
+            obtain ⟨w_1, h_1⟩ := f2
+            have hF_inter_1 : (F1 ∩ F2).card.mod p = p - 1 := by
+              sorry
+            have hF_inter_2 :(F1 ∩ F2).card ≤ p^2 - 1 := by
+              sorry
             sorry
           k_bounded := by
             intro F hF
@@ -278,12 +288,17 @@ theorem Explicit_Ramsey_Graph_Correctness (p : ℕ) (hp : p.Prime) :
             constructor
             intros F hF
             refine Finset.forall_mem_not_eq'.mp ?_
-            intro b hb
+            intro b hb hn
+            simp_all only [L, T_val, Finset.mem_image]
+
+
             sorry
             intros F1 hF1 F2 hF2 hF
             refine mem_image_univ_iff_mem_range.mpr ?_
             simp
-            sorry
+            have h_max : (F1 ∩ F2).card.mod p < p := by sorry -- by definition of mod
+            have h_uneq : (F1 ∩ F2).card.mod p ≠ p -1 := by sorry -- by definition of not adjacent
+            omega
             ,
           k_bounded := by
             intro F hF
