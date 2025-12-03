@@ -205,6 +205,15 @@ lemma trivial_fact_2 {α : Type*} [DecidableEq α] (A B :Finset α ) : Finset.ca
     apply Finset.card_mono
     simp_all only [Finset.subset_union_left, Finset.le_eq_subset] -- whatever this is
 
+lemma trivial_fact_3 (p : ℕ) (h : p ≥  2) : (p * p - 1).mod p = p - 1 := by
+  sorry
+
+lemma trivial_fact_4 (x p : ℕ) (h : (x).mod p = p - 1) : ∃ a ≥ 1, p*a -1 = x  := by
+  sorry
+
+lemma trivial_fact_5 {α : Type*} [DecidableEq α] (k : ℕ) (A B :Finset α ) (h1 : A.card = k) (h2 : B.card = k) (h3 : A ≠ B) : (A ∩ B).card < k := by
+  sorry
+
 lemma Prime_geq_2  (p : ℕ) (h : Nat.Prime p) :p ≥  2 := by  {
     cases p
     contradiction
@@ -214,22 +223,23 @@ lemma Prime_geq_2  (p : ℕ) (h : Nat.Prime p) :p ≥  2 := by  {
     omega
   }
 
-lemma No_clique : true  := by trivial
-
-lemma No_indset : true  := by trivial
-
-
-theorem Explicit_Ramsey_Graph_Correctness (p : ℕ) (hp : p.Prime) :
-    Diagonal_Ramsey (Explicit_Ramsey_Graph p) ((p^3).choose (p^2 - 1)) ((p^3).choose (p-1) + 1) := by
-  set n := (p^3).choose (p^2 - 1)
-  set k := ((p^3).choose (p-1) + 1)
-  have hhp : p ≥ 2 := by exact Prime_geq_2 p hp
-  have hp2 : p > 0 := by omega -- makes a few things easier
-  simp
-  constructor
-  · rfl
-  · constructor
-    · intro S h
+lemma No_clique
+  (p : ℕ) (hp : Nat.Prime p)
+  (hhp : p ≥ 2)
+  (hp2 : p > 0)
+   (S : Finset { A : Finset (Fin (p ^ 3)) // A.card = p ^ 2 - 1 }) :
+  ¬SimpleGraph.IsNClique
+    { Adj := fun A B => (A.val ∩ B.val).card % p = p - 1 ∧ A.val ≠ B.val,
+      symm := by
+        intro V U h1
+        rw [Finset.inter_comm, ne_comm]
+        assumption,
+      loopless := by
+        intro x
+        simp } ((p ^ 3).choose (p - 1) + 1) S := by
+      set n := (p ^ 3).choose (p ^ 2 - 1)
+      set k := (p ^ 3).choose (p - 1) + 1
+      intro h
       grw[SimpleGraph.isNClique_iff, SimpleGraph.isClique_iff] at h
       obtain ⟨h_clique, h_card⟩ := h
 
@@ -247,14 +257,30 @@ theorem Explicit_Ramsey_Graph_Correctness (p : ℕ) (hp : p.Prime) :
               ne_eq, Finset.mem_range, S_val, L]
         obtain ⟨w, h⟩ := f1
         obtain ⟨w_1, h_1⟩ := f2
-        have hF_inter_1 : (F1 ∩ F2).card.mod p = p - 1 := by
+        have hF_inter_1 : (F1 ∩ F2).card.mod p = p - 1 := by -- you should be able to pull this out of the definition imo
           sorry
-        have hF_inter_2 :(F1 ∩ F2).card ≤ p^2 - 1 := by -- again should be much simpler imo
-          grw[Finset.card_inter,w ,w_1]
-          simp
-          grw[<-trivial_fact_2, w, Nat.sub_add_cancel]
-          grw[Nat.pow_two, <-hhp]
-          trivial
+        have hF_inter_2 :(F1 ∩ F2).card < p^2 - 1 := by --
+          exact trivial_fact_5 (p^2 - 1) F1 F2 w w_1 hF
+        apply trivial_fact_4 at hF_inter_1
+        obtain ⟨w_2, h_2⟩ := hF_inter_1
+        obtain ⟨h_3, h_2⟩ := h_2
+        use (w_2 -1)
+        constructor
+        grw[<-h_2, Nat.pow_two, <-Nat.add_one_lt_add_one_iff, Nat.sub_add_cancel, Nat.sub_add_cancel, Nat.mul_lt_mul_left hp2] at hF_inter_2
+        omega
+        have wtf : p ≥ 1 := by omega
+        grw[wtf]
+        grw[h_3, Nat.mul_one]
+        assumption
+        grw[Nat.sub_add_cancel, Nat.mul_comm]
+        assumption
+        assumption
+
+
+
+
+
+
 
       let fam : Families.k_L_Family (p^3) := by
         refine{
@@ -298,57 +324,77 @@ theorem Explicit_Ramsey_Graph_Correctness (p : ℕ) (hp : p.Prime) :
           }
         grw[help]
         exact Finset.card_range (p - 1)
-
       have hS : S_val.card =  S.card := by
         apply Finset.card_image_of_injective
         exact Subtype.val_injective
-      grw[hL, hS] at hf
+      grw[hL, hS, h_card] at hf
       omega
 
 
-    · intros T h
-      grw[SimpleGraph.isNIndepSet_iff, SimpleGraph.isIndepSet_iff] at h
-      obtain ⟨h_ind, h_card⟩ := h
+lemma No_indset
+   (p : ℕ) (hp : Nat.Prime p)
+  (hhp : p ≥ 2)
+  (hp2 : p > 0)
+  (T : Finset { A : Finset (Fin (p ^ 3)) // A.card = p ^ 2 - 1 }) :
+  ¬SimpleGraph.IsNIndepSet
+      { Adj := fun A B => (A.val ∩ B.val).card % p = p - 1 ∧ A.val ≠ B.val,
+        symm := by
+          intro V U h1
+          rw [Finset.inter_comm, ne_comm]
+          assumption,
+        loopless := by
+          intro x
+          simp } ((p ^ 3).choose (p - 1) + 1) T := by
+    set n := (p ^ 3).choose (p ^ 2 - 1)
+    set k := (p ^ 3).choose (p - 1) + 1
+    intro h
+    grw[SimpleGraph.isNIndepSet_iff, SimpleGraph.isIndepSet_iff] at h
+    obtain ⟨h_ind, h_card⟩ := h
+    let L : Finset ℕ := (Finset.univ : Finset (Fin (p-1))).image Fin.val
 
-      let L : Finset ℕ := (Finset.univ : Finset (Fin (p-1))).image Fin.val
+    let T_val : Finset (Finset (Fin (p^3))) := T.image Subtype.val
 
-      let T_val : Finset (Finset (Fin (p^3))) := T.image Subtype.val
-
-      let hk : ∀ F ∈ T_val, F.card.mod p = (p ^ 2 - 1).mod p := by
-        intro F hF
-        simp_all only [ge_iff_le, gt_iff_lt, not_and, Decidable.not_not, Finset.mem_image, Subtype.exists,
+    let hk : ∀ F ∈ T_val, F.card.mod p = (p ^ 2 - 1).mod p := by
+      intro F hF
+      simp_all only [ge_iff_le, gt_iff_lt, not_and, Decidable.not_not, Finset.mem_image, Subtype.exists,
               exists_and_right, exists_eq_right, k, T_val, Set.Pairwise]
-        simp at h_ind
-        obtain ⟨w, h⟩ := hF
-        simp_all only
+      simp at h_ind
+      obtain ⟨w, h⟩ := hF
+      simp_all only
 
-      let hL : (∀ F ∈ T_val, F.card.mod p ∉ L) ∧ ∀ F1 ∈ T_val, ∀ F2 ∈ T_val, F1 ≠ F2 → (F1 ∩ F2).card.mod p ∈ L:= by
-        constructor
-        intros F hF
-        refine Finset.forall_mem_not_eq'.mp ?_
-        intro b hb hn
-        simp_all [L, T_val, Finset.mem_image, Set.Pairwise]
-        have hF : F.card.mod p = (p-1) := by
-          subst hn
-          simp_all only [Finset.mem_image, Subtype.exists, exists_and_right, exists_eq_right, k, T_val, hk]
-          obtain ⟨w, h⟩ := hF
-          obtain ⟨w_1, h_1⟩ := hb
-          grw[Nat.pow_two]
-
-        grind only
-        intros F1 hF1 F2 hF2 hF
-        refine mem_image_univ_iff_mem_range.mpr ?_
-        simp_all [ T_val, Set.Pairwise]
-        have h_max : (F1 ∩ F2).card.mod p < p := by -- somehow necessary
-          apply Nat.mod_lt (F1 ∩ F2).card (by exact hp2)
-        have h_uneq : (F1 ∩ F2).card.mod p ≠ p -1 := by
-          simp_all only [ne_eq, k]
-          obtain ⟨w, h⟩ := hF1
-          obtain ⟨w_1, h_1⟩ := hF2
-          simp_all only [not_false_eq_true]
-        omega
-
-      let fam : Families.k_L_p_Family (p^3) := by
+    let hL : (∀ F ∈ T_val, F.card.mod p ∉ L) ∧ ∀ F1 ∈ T_val, ∀ F2 ∈ T_val, F1 ≠ F2 → (F1 ∩ F2).card.mod p ∈ L:= by
+      constructor
+      intro F hf
+      refine Finset.forall_mem_not_eq'.mp ?_
+      intro b hb hn
+      simp_all [L, T_val, Finset.mem_image, Set.Pairwise]
+      have hF : F.card.mod p = (p-1) := by
+        subst hn
+        simp_all only [Finset.mem_image, Subtype.exists, exists_and_right, exists_eq_right, k, T_val, hk]
+        obtain ⟨w, h⟩ := hf
+        obtain ⟨w_1, h_1⟩ := hb
+        grw[Nat.pow_two]
+        apply trivial_fact_3 p hhp
+      grind only
+      intros F1 hF1 F2 hF2 hF
+      refine mem_image_univ_iff_mem_range.mpr ?_
+      simp_all [ T_val, Set.Pairwise]
+      have h_max : (F1 ∩ F2).card.mod p < p := by -- somehow necessary
+        apply Nat.mod_lt (F1 ∩ F2).card (by exact hp2)
+      have h_uneq : (F1 ∩ F2).card.mod p ≠ p -1 := by
+        simp_all only [ne_eq, k]
+        obtain ⟨w, h⟩ := hF1
+        obtain ⟨w_1, h_1⟩ := hF2
+        apply Aesop.BuiltinRules.not_intro -- some AESOP magic
+        intro a
+        simp_all only [tsub_lt_self_iff, zero_lt_one, and_self]
+        apply h_ind
+        · exact h
+        · exact h_1
+        · simp_all only [not_false_eq_true]
+        · exact a
+      omega
+    let fam : Families.k_L_p_Family (p^3) := by
         refine{
           elems := T_val,
           L := L,
@@ -360,35 +406,53 @@ theorem Explicit_Ramsey_Graph_Correctness (p : ℕ) (hp : p.Prime) :
           L_p_intersecting := hL
             ,
         }
-      have hL : L.card =  p-1 := by
-        have help : L.card = (Finset.univ : Finset (Fin (p-1))).card  := by
+    have hL : L.card =  p-1 := by
+      have help : L.card = (Finset.univ : Finset (Fin (p-1))).card  := by
           apply Finset.card_image_of_injective
           exact Fin.val_injective
-        grw[help, Finset.card_univ, Fintype.card_fin]
+      grw[help, Finset.card_univ, Fintype.card_fin]
 
-      have hT : T_val.card =  T.card := by
-        apply Finset.card_image_of_injective
-        exact Subtype.val_injective
+    have hT : T_val.card =  T.card := by
+      apply Finset.card_image_of_injective
+      exact Subtype.val_injective
 
-      have hf : T_val.card ≤ (p ^ 3).choose L.card := by
-        apply Lemmas.Alon_Babai_Suzuki fam
-        constructor
-        simp_all only [le_refl, k, L, T_val, fam]
-        simp_all only [ k, L, T_val, fam] -- this below here is probably a one liner somehow
-        apply Nat.le_of_succ_le
-        apply  Nat.le_of_succ_le
-        simp
-        have help : p^3 = p * p * p := by linarith
-        grw[Nat.add_comm, Nat.add_assoc, Nat.sub_add_cancel, <-Nat.add_assoc, Nat.add_sub_cancel', Nat.pow_two, help]
-        nth_grw 1 [<-Nat.mul_one p]
-        grw[<-Nat.mul_add]
-        have help2 :  1 + p ≤ p*p :=  by exact trivial_fact_1 p hhp
-        grw[help2]
-        linarith
-        grw[hhp]
-        trivial
-        grw[Nat.pow_two, hhp]
-        trivial
-      grw[hL, hT] at hf
-      omega
+    have hf : T_val.card ≤ (p ^ 3).choose L.card := by
+      apply Lemmas.Alon_Babai_Suzuki fam
+      constructor
+      simp_all only [le_refl, k, L, T_val, fam]
+      simp_all only [ k, L, T_val, fam] -- this below here is probably a one liner somehow
+      apply Nat.le_of_succ_le
+      apply  Nat.le_of_succ_le
+      simp
+      have help : p^3 = p * p * p := by linarith
+      grw[Nat.add_comm, Nat.add_assoc, Nat.sub_add_cancel, <-Nat.add_assoc, Nat.add_sub_cancel', Nat.pow_two, help]
+      nth_grw 1 [<-Nat.mul_one p]
+      grw[<-Nat.mul_add]
+      have help2 :  1 + p ≤ p*p :=  by exact trivial_fact_1 p hhp
+      grw[help2]
+      linarith
+      grw[hhp]
+      trivial
+      grw[Nat.pow_two, hhp]
+      trivial
+    grw[hL, hT] at hf
+    omega
+
+theorem Explicit_Ramsey_Graph_Correctness (p : ℕ) (hp : p.Prime) :
+    Diagonal_Ramsey (Explicit_Ramsey_Graph p) ((p^3).choose (p^2 - 1)) ((p^3).choose (p-1) + 1) := by
+  set n := (p^3).choose (p^2 - 1)
+  set k := ((p^3).choose (p-1) + 1)
+  have hhp : p ≥ 2 := by exact Prime_geq_2 p hp
+  have hp2 : p > 0 := by omega -- makes a few things easier
+  simp
+  constructor
+  · rfl
+  · constructor
+    · intro S
+      dsimp[k]
+      exact No_clique p hp hhp hp2 S
+
+    · intros T
+      dsimp[k]
+      exact No_indset p hp hhp hp2 T
 end Result
