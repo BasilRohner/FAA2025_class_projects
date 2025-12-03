@@ -193,6 +193,9 @@ instance (p : ℕ) : DecidableRel (Explicit_Ramsey_Graph p).Adj := by
   exact instDecidableAnd
 
 
+-- A few "trivial" facts I need below
+-- stated sepratley becacue they feel general
+-- as in I dont actually need many assumptions
 
 lemma trivial_fact_1 (p : ℕ) (h : p ≥ 2) :  1 + p ≤ p*p := by
   induction' p with p2 hp
@@ -257,11 +260,11 @@ lemma No_clique
               ne_eq, Finset.mem_range, S_val, L]
         obtain ⟨w, h⟩ := f1
         obtain ⟨w_1, h_1⟩ := f2
-        have hF_inter_1 : (F1 ∩ F2).card.mod p = p - 1 := by -- you should be able to pull this out of the definition imo
+        have hF_inter_1 : (F1 ∩ F2).card.mod p = p - 1 := by -- one should be able to pull this out of the definition (just like for the IS but somehow I cant)
           sorry
         have hF_inter_2 :(F1 ∩ F2).card < p^2 - 1 := by --
           exact trivial_fact_5 (p^2 - 1) F1 F2 w w_1 hF
-        apply trivial_fact_4 at hF_inter_1
+        apply trivial_fact_4 at hF_inter_1 -- the rest is just lots of algebra now probably can once more be donce shorter
         obtain ⟨w_2, h_2⟩ := hF_inter_1
         obtain ⟨h_3, h_2⟩ := h_2
         use (w_2 -1)
