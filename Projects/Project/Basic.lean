@@ -297,7 +297,14 @@ lemma No_clique
         obtain ⟨w, h⟩ := f1
         obtain ⟨w_1, h_1⟩ := f2
         have hF_inter_1 : (F1 ∩ F2).card.mod p = p - 1 := by -- one should be able to pull this out of the definition (just like for the IS but somehow I cant)
-          sorry
+          simp[Set.Pairwise] at h_clique
+          specialize h_clique F1 w
+          apply h_clique at h
+          specialize h F2 w_1
+          apply h at h_1
+          apply h_1 at hF
+          obtain ⟨hh, _ ⟩ := hF
+          assumption
         have hF_inter_2 :(F1 ∩ F2).card < p^2 - 1 := by --
           exact trivial_fact_5 (p^2 - 1) F1 F2 w w_1 hF
         apply trivial_fact_4 (F1 ∩ F2).card p at hF_inter_1 -- the rest is just lots of algebra now probably can once more be donce shorter
