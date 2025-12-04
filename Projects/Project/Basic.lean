@@ -18,10 +18,11 @@ import Mathlib.Algebra.Polynomial.Basic
 import Mathlib.Algebra.MvPolynomial.Basic
 import Mathlib.Combinatorics.SimpleGraph.Clique
 import Mathlib.Analysis.SpecialFunctions.Pow.NthRootLemmas
+import Mathlib.Algebra.Divisibility.Basic
 
 -- set_option diagnostics true
 
-set_option maxHeartbeats 400000
+set_option maxHear tbeats 400000
 
 notation "⟦"n"⟧" => Finset (Fin n)
 
@@ -165,17 +166,17 @@ open Graph
 open Set
 
 @[simp]
-def  vertices (p : ℕ) : Type :=
+def vertices (p : ℕ) : Type :=
   { A : Finset (Fin (p^3)) // A.card = p^2 - 1 }
 
 @[simp]
 instance (p : ℕ) : Fintype (vertices p) :=
-  Subtype.fintype (fun A : Finset (Fin (p^3)) => A.card = p^2 - 1)
+  Subtype.fintype (fun A : Finset (Fin (p^3)) ↦ A.card = p^2 - 1)
 
 @[simp]
 def Explicit_Ramsey_Graph (p : ℕ) : SimpleGraph (vertices p) :=
   {
-    Adj := fun A B => (A.val ∩ B.val).card.mod p = p - 1 ∧ A.val ≠ B.val,
+    Adj := fun A B ↦ (A.val ∩ B.val).card.mod p = p - 1 ∧ A.val ≠ B.val,
     symm := by
       intro V U h1
       rw [Finset.inter_comm, ne_comm]
@@ -195,27 +196,82 @@ instance (p : ℕ) : DecidableRel (Explicit_Ramsey_Graph p).Adj := by
 
 -- A few "trivial" facts I need below
 -- stated sepratley becacue they feel general
--- as in I dont actually need many assumptions
 
-lemma trivial_fact_1 (p : ℕ) (h : p ≥ 2) :  1 + p ≤ p*p := by
-  induction' p with p2 hp
-  contradiction
-  grw[Nat.mul_add, Nat.add_mul, Nat.mul_one, Nat.one_mul]
+
+lemma trivial_fact_1 (p : ℕ) (h : p ≥ 2) :  1 + p ≤ p * p := by
+  induction' p with p ih
+  · contradiction
+  · grw [Nat.mul_add, Nat.add_mul, Nat.mul_one, Nat.one_mul]
+    omega
+
+lemma trivial_fact_2 {α : Type*} [DecidableEq α] (A B : Finset α) : Finset.card A ≤ (A ∪ B).card := by
+  apply Finset.card_mono
+  simp
+
+lemma trivial_fact_3 (p : ℕ) (h : p ≥ 2) : (p * p - 1).mod p = p - 1 := by
+  apply Nat.mod_eq_iff.2
+  right
+  constructor
+  · grind
+  · use p-1
+    simp [Nat.mul_sub]
+    have eq_1 : p * p ≥ 1 := by simp ; grw [h] ; simp
+    have eq_2 : p * p ≥ p := by induction' p <;> simp
+    have eq_3 : p ≥ 1 := by grw [h] ; simp
+    zify [eq_1, eq_2, eq_3]
+    omega
+
+lemma trivial_fact_4 (x p : ℕ) (hp : 1 ≤ p) (hpp: p-1 ≤ x) (h : Nat.ModEq p (p - 1) x) : ∃ a ≥ 1, p*a - 1 = x := by
+  have ⟨k, hk⟩ : ∃ k : ℕ, x - (p-1) = p * k := by
+    apply Nat.ModEq.dvd at h
+    apply dvd_def.1
+    zify [hpp]
+    assumption
+  use k+1
+  simp [Nat.mul_add]
+  rw [←hk]
+  have : x - (p-1) + p ≥ 1 := by
+    rw [hk]
+    have : p * k ≥ 0 := by simp
+    grw [this, hp]
+    simp
+  zify [this, hpp]
   omega
 
-lemma trivial_fact_2 {α : Type*} [DecidableEq α] (A B :Finset α ) : Finset.card A ≤ (A ∪ B).card  := by
-    have hS : A ⊆ A ∪ B := by simp_all only [Finset.subset_union_left]
-    apply Finset.card_mono
-    simp_all only [Finset.subset_union_left, Finset.le_eq_subset] -- whatever this is
+lemma trivial_fact_4' (x p : ℕ) (hp : 1 ≤ p) (h : x.mod p = p-1) : ∃ a ≥ 1, p*a - 1 = x := by
+  have ha : x ≥ p - 1 := by
+    grw [←Nat.mod_le x p, ←h]
+    rfl
+  sorry -- could use that but the above is better
+  have ⟨k, hk⟩ : ∃ k : ℕ, x - (p-1) = p * k := by
+    sorry
+  /-
+  use k+1
+  simp [Nat.mul_add]
+  rw [←hk]
+  have : x - (p-1) + p ≥ 1 := by
+    rw [hk]
+    have : p * k ≥ 0 := by simp
+    grw [this, hp]
+    simp
+  zify [this, hpp]
+  omega
+  -/
 
-lemma trivial_fact_3 (p : ℕ) (h : p ≥  2) : (p * p - 1).mod p = p - 1 := by
-  sorry
-
-lemma trivial_fact_4 (x p : ℕ) (h : (x).mod p = p - 1) : ∃ a ≥ 1, p*a -1 = x  := by
-  sorry
-
-lemma trivial_fact_5 {α : Type*} [DecidableEq α] (k : ℕ) (A B :Finset α ) (h1 : A.card = k) (h2 : B.card = k) (h3 : A ≠ B) : (A ∩ B).card < k := by
-  sorry
+lemma trivial_fact_5 {α : Type*} [DecidableEq α] (k : ℕ) (A B : Finset α) (h1 : A.card = k) (h2 : B.card = k) (h3 : A ≠ B) : (A ∩ B).card < k := by
+  by_cases A ⊆ B <;> expose_names
+  · have := Finset.card_lt_card (Finset.ssubset_iff_subset_ne.2 ⟨h, h3⟩)
+    grw [h1, h2] at this
+    grind
+  · have : A ∩ B ⊂ A := by
+      apply Finset.ssubset_iff_subset_ne.2
+      constructor
+      · simp
+      · simp
+        assumption
+    have := Finset.card_lt_card this
+    rw [h1] at this
+    assumption
 
 lemma Prime_geq_2  (p : ℕ) (h : Nat.Prime p) :p ≥  2 := by  {
     cases p
@@ -264,7 +320,7 @@ lemma No_clique
           sorry
         have hF_inter_2 :(F1 ∩ F2).card < p^2 - 1 := by --
           exact trivial_fact_5 (p^2 - 1) F1 F2 w w_1 hF
-        apply trivial_fact_4 at hF_inter_1 -- the rest is just lots of algebra now probably can once more be donce shorter
+        apply trivial_fact_4' (F1 ∩ F2).card p at hF_inter_1 -- the rest is just lots of algebra now probably can once more be donce shorter
         obtain ⟨w_2, h_2⟩ := hF_inter_1
         obtain ⟨h_3, h_2⟩ := h_2
         use (w_2 -1)
@@ -278,12 +334,7 @@ lemma No_clique
         grw[Nat.sub_add_cancel, Nat.mul_comm]
         assumption
         assumption
-
-
-
-
-
-
+        assumption
 
       let fam : Families.k_L_Family (p^3) := by
         refine{
@@ -335,7 +386,7 @@ lemma No_clique
 
 
 lemma No_indset
-   (p : ℕ) (hp : Nat.Prime p)
+  (p : ℕ) (hp : Nat.Prime p)
   (hhp : p ≥ 2)
   (hp2 : p > 0)
   (T : Finset { A : Finset (Fin (p ^ 3)) // A.card = p ^ 2 - 1 }) :
@@ -454,7 +505,6 @@ theorem Explicit_Ramsey_Graph_Correctness (p : ℕ) (hp : p.Prime) :
     · intro S
       dsimp[k]
       exact No_clique p hp hhp hp2 S
-
     · intros T
       dsimp[k]
       exact No_indset p hp hhp hp2 T
