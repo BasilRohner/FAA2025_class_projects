@@ -238,26 +238,6 @@ lemma trivial_fact_4 (x p : ℕ) (hp : 1 ≤ p) (hpp: p-1 ≤ x) (h : Nat.ModEq 
   zify [this, hpp]
   omega
 
-lemma trivial_fact_4' (x p : ℕ) (hp : 1 ≤ p) (h : x.mod p = p-1) : ∃ a ≥ 1, p*a - 1 = x := by
-  have ha : x ≥ p - 1 := by
-    grw [←Nat.mod_le x p, ←h]
-    rfl
-  sorry -- could use that but the above is better
-  have ⟨k, hk⟩ : ∃ k : ℕ, x - (p-1) = p * k := by
-    sorry
-  /-
-  use k+1
-  simp [Nat.mul_add]
-  rw [←hk]
-  have : x - (p-1) + p ≥ 1 := by
-    rw [hk]
-    have : p * k ≥ 0 := by simp
-    grw [this, hp]
-    simp
-  zify [this, hpp]
-  omega
-  -/
-
 lemma trivial_fact_5 {α : Type*} [DecidableEq α] (k : ℕ) (A B : Finset α) (h1 : A.card = k) (h2 : B.card = k) (h3 : A ≠ B) : (A ∩ B).card < k := by
   by_cases A ⊆ B <;> expose_names
   · have := Finset.card_lt_card (Finset.ssubset_iff_subset_ne.2 ⟨h, h3⟩)
@@ -320,7 +300,7 @@ lemma No_clique
           sorry
         have hF_inter_2 :(F1 ∩ F2).card < p^2 - 1 := by --
           exact trivial_fact_5 (p^2 - 1) F1 F2 w w_1 hF
-        apply trivial_fact_4' (F1 ∩ F2).card p at hF_inter_1 -- the rest is just lots of algebra now probably can once more be donce shorter
+        apply trivial_fact_4 (F1 ∩ F2).card p at hF_inter_1 -- the rest is just lots of algebra now probably can once more be donce shorter
         obtain ⟨w_2, h_2⟩ := hF_inter_1
         obtain ⟨h_3, h_2⟩ := h_2
         use (w_2 -1)
