@@ -106,6 +106,7 @@ open Constructions
 def f {n : ℕ} (F : L_p_Family n) (U V : ⟦n⟧) : ZMod F.p :=
   ∏ l ∈ F.L, (vec_dot (@Char_Vec (ZMod F.p) (by exact CommRing.toCommSemiring.toSemiring) n V) (@Char_Vec (ZMod F.p) (by exact CommRing.toCommSemiring.toSemiring) n U) - (l : ZMod F.p))
 
+
 @[simp]
 theorem Frankl_Wilson {n : ℕ} (F : L_p_Family n) : F.card ≤ ∑ i ∈ Finset.range (F.L.card + 1), n.choose i := by
   have : ∀ U ∈ F.elems, ∀ V ∈ F.elems, U ≠ V → f F U V = 0 := by
@@ -138,14 +139,21 @@ theorem Frankl_Wilson {n : ℕ} (F : L_p_Family n) : F.card ≤ ∑ i ∈ Finset
 @[simp]
 theorem Ray_Chaudhuri_Wilson {n : ℕ} (F : k_L_Family n) : (∀ l ∈ F.L, l < F.k) → F.card ≤ n.choose F.s := by
   intro h
-  -- very similar to the above
+  -- Create Vectors in 𝔽(p) (1 to 1 mapping to sets )
+  -- Create Polynomials (1 to 1 mapping to vectors to sets)
+  -- Create Extra Polynomials
+  -- Show independece
+  -- Bound Degrees of polynomials
+  -- Show total max caridanlity via Dimension argument
+  -- Show cardinality of Extra Polynomails
+  -- this implies : F.card = cardinality of Polynomials = ≤ Max Dim  - Card Extra ≤ n.choose F.s
   sorry
 
 @[simp]
 theorem Alon_Babai_Suzuki {n : ℕ} (F : k_L_p_Family n) : F.s ≤ F.p - 1 ∧ F.s + F.k ≤ n
   → F.card ≤ n.choose F.s := by
   intro h
-  obtain ⟨h1, h2, h3⟩ := h
+  obtain ⟨h1, h2⟩ := h
   sorry
 
 end Lemmas
@@ -307,8 +315,21 @@ lemma No_clique
           assumption
         have hF_inter_2 :(F1 ∩ F2).card < p^2 - 1 := by --
           exact trivial_fact_5 (p^2 - 1) F1 F2 w w_1 hF
-        apply trivial_fact_4 (F1 ∩ F2).card p at hF_inter_1 -- the rest is just lots of algebra now probably can once more be donce shorter
-        obtain ⟨w_2, h_2⟩ := hF_inter_1
+        have hF_inter_3 : ∃ a ≥ 1, p*a - 1 =  (F1 ∩ F2).card := by
+          apply trivial_fact_4
+          omega
+          by_contra hp3 -- should be simpler
+          have hp3 : (F1 ∩ F2).card < p -1 := by omega
+          have hp4 : (F1 ∩ F2).card  < p := by omega
+          have hp5 : (F1 ∩ F2).card.mod p < p -1 := by
+            apply Nat.mod_lt_of_lt
+            assumption
+          omega
+          simp[Nat.ModEq]
+          symm
+          assumption
+
+        obtain ⟨w_2, h_2⟩ := hF_inter_3
         obtain ⟨h_3, h_2⟩ := h_2
         use (w_2 -1)
         constructor
@@ -321,7 +342,7 @@ lemma No_clique
         grw[Nat.sub_add_cancel, Nat.mul_comm]
         assumption
         assumption
-        assumption
+
 
       let fam : Families.k_L_Family (p^3) := by
         refine{
@@ -370,7 +391,6 @@ lemma No_clique
         exact Subtype.val_injective
       grw[hL, hS, h_card] at hf
       omega
-
 
 lemma No_indset
   (p : ℕ) (hp : Nat.Prime p)
