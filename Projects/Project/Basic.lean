@@ -19,10 +19,10 @@ import Mathlib.Algebra.MvPolynomial.Basic
 import Mathlib.Combinatorics.SimpleGraph.Clique
 import Mathlib.Analysis.SpecialFunctions.Pow.NthRootLemmas
 import Mathlib.Algebra.Divisibility.Basic
-
+import Mathlib.Algebra.MvPolynomial.Basic
 -- set_option diagnostics true
 
-set_option maxHear tbeats 400000
+set_option maxHeartbeats 400000
 
 notation "⟦"n"⟧" => Finset (Fin n)
 
@@ -136,17 +136,37 @@ theorem Frankl_Wilson {n : ℕ} (F : L_p_Family n) : F.card ≤ ∑ i ∈ Finset
   sorry
   -- might not be that much more effort for this simple lemma even
 
+class Vec_R (n : ℕ) where
+  elem : Fin n → ℝ
+
+@[simp]
+instance Char_Vec {n : ℕ} (S : ⟦n⟧) : Vec_R n where
+  elem := fun i ↦ if i ∈ S then (1 : ℕ) else (0 : ℕ)
+
+def poly {N : N} (L : Finset ℕ)
+
+
 @[simp]
 theorem Ray_Chaudhuri_Wilson {n : ℕ} (F : k_L_Family n) : (∀ l ∈ F.L, l < F.k) → F.card ≤ n.choose F.s := by
   intro h
-  -- Create Vectors in 𝔽(p) (1 to 1 mapping to sets )
-  -- Create Polynomials (1 to 1 mapping to vectors to sets)
-  -- Create Extra Polynomials
+  -- Create Identity Vectors
+  let vecs : Finset (Vec_R n):= (F.elems).image (fun i => Char_Vec_R i)
+  -- Create Polynomials
+
+  -- Take MLE
+
+  -- Create Extra Polynomials (naturally as MLE)
+
+  -- Bound Degrees of polynomials (via MLE)
+
   -- Show independece
-  -- Bound Degrees of polynomials
-  -- Show total max caridanlity via Dimension argument
+
+  -- Show total max caridanlity via Dimension argument (hopefully some Lemma in Lean)
+
   -- Show cardinality of Extra Polynomails
+
   -- this implies : F.card = cardinality of Polynomials = ≤ Max Dim  - Card Extra ≤ n.choose F.s
+
   sorry
 
 @[simp]
@@ -204,7 +224,6 @@ instance (p : ℕ) : DecidableRel (Explicit_Ramsey_Graph p).Adj := by
 
 -- A few "trivial" facts I need below
 -- stated sepratley becacue they feel general
-
 
 lemma trivial_fact_1 (p : ℕ) (h : p ≥ 2) :  1 + p ≤ p * p := by
   induction' p with p ih
@@ -271,7 +290,7 @@ lemma Prime_geq_2  (p : ℕ) (h : Nat.Prime p) :p ≥  2 := by  {
   }
 
 lemma No_clique
-  (p : ℕ) (hp : Nat.Prime p)
+  (p : ℕ)
   (hhp : p ≥ 2)
   (hp2 : p > 0)
    (S : Finset { A : Finset (Fin (p ^ 3)) // A.card = p ^ 2 - 1 }) :
@@ -412,9 +431,7 @@ lemma No_indset
     grw[SimpleGraph.isNIndepSet_iff, SimpleGraph.isIndepSet_iff] at h
     obtain ⟨h_ind, h_card⟩ := h
     let L : Finset ℕ := (Finset.univ : Finset (Fin (p-1))).image Fin.val
-
     let T_val : Finset (Finset (Fin (p^3))) := T.image Subtype.val
-
     let hk : ∀ F ∈ T_val, F.card.mod p = (p ^ 2 - 1).mod p := by
       intro F hF
       simp_all only [ge_iff_le, gt_iff_lt, not_and, Decidable.not_not, Finset.mem_image, Subtype.exists,
@@ -511,8 +528,9 @@ theorem Explicit_Ramsey_Graph_Correctness (p : ℕ) (hp : p.Prime) :
   · constructor
     · intro S
       dsimp[k]
-      exact No_clique p hp hhp hp2 S
+      exact No_clique p hhp hp2 S
     · intros T
       dsimp[k]
       exact No_indset p hp hhp hp2 T
+
 end Result
