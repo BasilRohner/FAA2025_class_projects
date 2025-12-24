@@ -108,22 +108,33 @@ noncomputable def MLE {n : ℕ} (p : MvPolynomial (Fin n) ℚ) : MvPolynomial (F
 
 @[simp]
 theorem total_degree_bound {n p : ℕ}
-    (S : Finset (MvPolynomial (Fin n) ℝ))
+    (S : Finset (MvPolynomial (Fin n) ℚ))
     (h_multi : ∀ poly ∈ S, ∀ i, degreeOf i poly ≤ 1)
     (h_total : ∀ poly ∈ S, totalDegree poly ≤ p)
-    (h_li : LinearIndependent ℝ (fun poly => (poly : MvPolynomial (Fin n) ℝ))) :
+    (h_li : LinearIndependent ℚ (Subtype.val : S → MvPolynomial (Fin n) ℚ)):
     S.card ≤ ∑ k ∈  Finset.range (p + 1), Nat.choose n k := by
-  sorry -- Should be possible (emphasis on SHOULD)
+     sorry
 
-@[simp]
+-- Taking the MLE does not change the evaulation (for bitstrings)
 theorem MLE_equal_on_boolean_cube {n : ℕ} (p : MvPolynomial (Fin n) ℚ) :  ∀ f : (Fin n) → ℚ, (∀ i : Fin n , f i = 0 ∨ f i = 1) → eval f p = eval f (MLE p) := by
-  intros f a
+  intros f hf
   unfold MLE
   grw[p.as_sum, map_sum, Finsupp.sum]
   simp
-
-
-
+  apply Finset.sum_congr rfl
+  intro x hx
+  grw[eval_monomial, coeff]
+  simp
+  left
+  apply Finset.prod_congr rfl
+  intro y hy -- starting from here just tons of cases
+  by_cases hs :x y = 0
+  repeat simp[hs] -- case x y = 0 (handeled with just simp), else:
+  by_cases hss : f y = 0 -- if f y = 0
+  grw[hss, zero_pow hs]  -- (as x y ≠ 0, 0^(x y) = 0)
+  by_cases hss2 : f y = 1 -- if f y = 1
+  grw[hss2, one_pow] -- 1^xy = 1
+  cases hf y <;> contradiction -- cleaned up by Gemini
 
 -- MLE of any polynomial has degree ≤ 1 in any variable
 theorem MLE_have_deg_1 {n : ℕ} (p : MvPolynomial (Fin n) ℚ) : ∀ i, degreeOf i (MLE p) ≤ 1 := by
@@ -195,31 +206,31 @@ theorem Ray_Chaudhuri_Wilson {n : ℕ} (F : k_L_Family n) : (∀ l ∈ F.L, l < 
   -- Create Identity Vectors
   let vecs : Finset (Vec n):= (F.elems).image (fun i => Char_Vec i)
    -- Create Extra vectors
-  let index_sets := (Finset.powerset Finset.univ : Finset (Finset (Fin n))).filter (fun s => s.card < F.k)
+  let extras := (Finset.powerset Finset.univ : Finset (Finset (Fin n))).filter (fun s => s.card < F.s)
 
-  -- Facts about these polynomials
-  have non_zero_vec : ∀ v ∈ vecs, MvPolynomial.eval (fun i => v.elem i) (MLE (poly v F.L)) ≠ 0 := by
-    sorry
-  have zero_vec : ∀ v∈ vecs, ∀ u ∈ vecs, u ≠ v →  MvPolynomial.eval (fun i => u.elem i) (MLE (poly v F.L)) ≠ 0 := by
-    sorry
-  have non_zero_index : ∀ I ∈ index_sets, MvPolynomial.eval (fun i =>  if i ∈ I then 1 else 0) (MLE (poly2 I F.k)) ≠ 0 := by
-    sorry
-  have zero_index : ∀ I ∈ index_sets ,  ∀ J ∈ index_sets , (I ≠ J ∧ I.card ≤ J.card ) →MvPolynomial.eval (fun i =>  if i ∈ I then 1 else 0) (MLE (poly2 J F.k)) = 0 := by
-    sorry
-  have non_zero_index_vec : ∀ v ∈ vecs , ∀ I ∈ index_sets , MvPolynomial.eval (fun i => v.elem i) (MLE (poly2 I F.k)) = 0 := by
+  let P1 := (vecs).image (fun i => poly i F.L)
+  let P2 := (extras).image (fun i => poly2 i F.k)
+
+  have h_union : (P1 ∪ P2).card ≤ ∑ j ∈  Finset.range (F.s + 1), Nat.choose n j := by
+    sorry -- main proof (via polynomials and so on)
+
+
+  have h_extra : P2.card = ∑ j ∈  Finset.range (F.s), Nat.choose n j  := by
+    sorry -- injective
+
+  have h_vec : P1.card =  n.choose F.s := by
+    sorry -- algebra
+
+  have hF : Family.card n = P1.card := by
+    have hF2 : Family.card n = vecs.card := by
+      unfold vecs
+      grw[Finset.card_image_of_injective]
+      sorry -- by definition (cant extract it right now)
+      sorry -- injective
+    grw[hF2]
     sorry
 
-  -- Bound Degrees of polynomials (via MLE)
-  have deg_vec : ∀ v ∈ vecs,  MvPolynomial.totalDegree  (MLE (poly v F.L)) ≤ F.k := by
-    sorry
-  have deg_vec : ∀ I ∈ index_sets,  MvPolynomial.totalDegree  (MLE (poly2 I F.k)) ≤ F.k:= by
-    sorry
-  -- Show independece
 
-  -- Show total max caridanlity via Dimension argument (hopefully some Lemma in Lean)
 
-  -- Show cardinality of Extra Polynomials (injective to subsets of size at most k -1)
-
-  -- this implies : F.card = cardinality of Polynomials = ≤ Max Dim  - Card Extra ≤ n.choose F.s
-
-  sorry
+  grw[hF]
+  omega
