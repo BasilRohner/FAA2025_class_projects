@@ -31,6 +31,7 @@ namespace Families
 class Family (n : ℕ) where
   elems : Finset ⟦n⟧
   card := elems.card
+  card_eq : card = elems.card := by rfl -- otherwise one could redefine card later
 
 class L_Family (n : ℕ) extends Family n where
   L : Finset ℕ
@@ -136,21 +137,17 @@ theorem Frankl_Wilson {n : ℕ} (F : L_p_Family n) : F.card ≤ ∑ i ∈ Finset
   sorry
   -- might not be that much more effort for this simple lemma even
 
-class Vec_R (n : ℕ) where
-  elem : Fin n → ℝ
 
-@[simp]
-instance Char_Vec {n : ℕ} (S : ⟦n⟧) : Vec_R n where
-  elem := fun i ↦ if i ∈ S then (1 : ℕ) else (0 : ℕ)
+variable {n : ℕ} [CommRing ℝ]
 
-def poly {N : N} (L : Finset ℕ)
+def poly_B (L : Finset ℕ) (S : ⟦n⟧) : MvPolynomial (Fin n) ℝ :=
+  Π i : L, vec_dot
 
 
 @[simp]
 theorem Ray_Chaudhuri_Wilson {n : ℕ} (F : k_L_Family n) : (∀ l ∈ F.L, l < F.k) → F.card ≤ n.choose F.s := by
   intro h
   -- Create Identity Vectors
-  let vecs : Finset (Vec_R n):= (F.elems).image (fun i => Char_Vec_R i)
   -- Create Polynomials
 
   -- Take MLE
