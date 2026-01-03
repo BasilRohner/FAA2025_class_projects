@@ -22,9 +22,15 @@ import Mathlib.Algebra.Divisibility.Basic
 import Mathlib.Algebra.MvPolynomial.Basic
 import Mathlib.LinearAlgebra.LinearIndependent.Basic
 import Mathlib.RingTheory.AlgebraicIndependent.Basic
+import Mathlib.Data.Finset.Powerset
+import Mathlib.Data.Finset.Disjoint
+import Mathlib.LinearAlgebra.Dimension.Finrank
+import Mathlib.LinearAlgebra.Dimension.StrongRankCondition
+import Mathlib.LinearAlgebra.Dimension.Finrank
+-- import Mathlib.LinearAlgebra.FiniteDimension.Basic
 -- set_option diagnostics true
 
-set_option maxHeartbeats 400000
+set_option maxHeartbeats 400000000
 
 notation "⟦"n"⟧" => Finset (Fin n)
 
@@ -77,54 +83,169 @@ namespace Lemmas
 open Families
 open Constructions
 
-noncomputable def poly {n : ℕ} (v : Vec n) (L : Finset ℕ) :
-    MvPolynomial (Fin n) ℚ :=
-  Finset.prod L (fun l =>
-    let P_dot : MvPolynomial (Fin n) ℚ :=
-      ∑ i : Fin n,
-        MvPolynomial.C (v.elem i) * MvPolynomial.X i;
-    let P_l : MvPolynomial (Fin n) ℚ :=
-      MvPolynomial.C (l : ℚ);
-    P_dot - P_l
-  )
-
-noncomputable def poly2 {n : ℕ} (I : Finset (Fin n)) (k : ℚ) :
-    MvPolynomial (Fin n) ℚ :=
-  let sumX : MvPolynomial (Fin n) ℚ :=
-    ∑ i : Fin n, MvPolynomial.X i
-  let prodI : MvPolynomial (Fin n) ℚ :=
-    I.prod (fun i => MvPolynomial.X i)
-  (sumX - MvPolynomial.C k) * prodI
-
 open MvPolynomial
 
+/-
+ ∏ l ∈ L, (∑ i : Fin n, v[i] * x[i]) - l
+-/
+noncomputable def poly {n : ℕ} (v : Vec n) (L : Finset ℕ) :
+    MvPolynomial (Fin n) ℚ :=
+  ∏ l ∈ L, ((∑ i : Fin n, C (v.elem i) * X i) - C (l : ℚ))
+
+
+/-
+  (∑ i : Fin n, x[i] - k) * ∏ i ∈ I, x[i]
+-/
+noncomputable def poly2 {n : ℕ} (I : Finset (Fin n)) (k : ℚ) :
+    MvPolynomial (Fin n) ℚ :=
+  ((∑ i : Fin n, X i) - C k) * ∏ i ∈ I, X i
+
+
 noncomputable def MLE {n : ℕ} (p : MvPolynomial (Fin n) ℚ) : MvPolynomial (Fin n) ℚ :=
-  p.sum (fun m a =>
-    let newMonomial := Finset.univ.prod (fun i =>
-      if m i = 0 then 1 else X i)  -- cap degree at 1
-    C a * newMonomial
-  )
+  p.sum (fun m a ↦ C a * Finset.univ.prod (fun i ↦ if m i = 0 then 1 else X i))
 
 
-
-@[simp]
+/-
+  THIS IS BY FAR THE MOST ANNOYING THING I DID THIS SEMESTER
+-/
 theorem total_degree_bound {n p : ℕ}
     (S : Finset (MvPolynomial (Fin n) ℚ))
     (h_multi : ∀ poly ∈ S, ∀ i, degreeOf i poly ≤ 1)
     (h_total : ∀ poly ∈ S, totalDegree poly ≤ p)
     (h_li : LinearIndependent ℚ (Subtype.val : S → MvPolynomial (Fin n) ℚ)):
-    S.card ≤ ∑ k ∈  Finset.range (p + 1), Nat.choose n k := by
-     sorry
+    S.card ≤ ∑ k ∈ Finset.range (p + 1), Nat.choose n k := by
+
+  -- Construct set of valid supports (subsets of variables with size ≤ p)
+  let U : Finset (Finset (Fin n)) := (Finset.range (p + 1)).biUnion (fun k ↦ Finset.powersetCard k Finset.univ)
+
+  -- Define mapping from a support set to a monomial
+  let to_monomial (s : Finset (Fin n)) : MvPolynomial (Fin n) ℚ :=
+    monomial (∑ i ∈ s, Finsupp.single i 1) 1
+
+  -- Define the sapnning set of monomials M
+  let M : Finset (MvPolynomial (Fin n) ℚ) := U.image to_monomial
+
+-- |M| = ∑ k ∈ Finset.range (p + 1), n.choose k
+  have h_card_M : M.card = ∑ k ∈ Finset.range (p + 1), n.choose k := by
+    -- M = to_monomial(U)
+    rw [Finset.card_image_of_injective]
+    · -- Cardinality of U the same
+      rw [Finset.card_biUnion]
+      · apply Finset.sum_congr rfl
+        intro k _
+        rw [Finset.card_powersetCard, Finset.card_univ, Fintype.card_fin]
+      · -- Show the union is disjoint, have different size so...
+        intros i hi j hj hij
+        rw [Function.onFun, Finset.disjoint_left]
+        intros x hx hy
+        rw [Finset.mem_powersetCard] at hx hy
+        obtain ⟨h1, h2⟩ := hx
+        obtain ⟨h3, h4⟩ := hy
+        rw [h2] at h4
+        contradiction
+    · -- Prove injectivity of to_monomial
+      intro s t hs
+      unfold to_monomial at hs
+      simp_all
+      ext x
+      have h := Finsupp.ext_iff.mp hs x
+      simp [Finsupp.single_apply] at h
+      split_ifs at h with h1 h2
+      · grind
+      · grind
+
+  have h_span : Set.range (Subtype.val : S → MvPolynomial (Fin n) ℚ) ⊆
+    Submodule.span ℚ (M : Set (MvPolynomial (Fin n) ℚ)) := by
+
+    rw [Set.range_subset_iff]
+    intro ⟨poly, h_poly_in_S⟩
+    simp
+    rw [as_sum poly]
+    apply Submodule.sum_mem
+    intros d hd_in_support
+    -- Factor coef: monomial d c = c · monomial d 1
+    rw [←mul_one (coeff d poly), ←smul_eq_mul, ←smul_monomial]
+    apply Submodule.smul_mem
+    -- Show base (monomial d 1) is in span {M}
+    apply Submodule.subset_span
+    rw [Finset.mem_coe, Finset.mem_image]
+    -- use d.support as witness
+    use d.support
+    constructor
+    · rw [Finset.mem_biUnion]
+      use d.support.card
+      constructor
+      · rw [Finset.mem_range]
+        have h_sum_eq_card : d.sum (fun _ k ↦ k) = d.support.card := by
+          rw [Finsupp.sum]
+          trans ∑ i ∈ d.support, 1
+          · apply Finset.sum_congr rfl
+            intro x hx
+            have t1 := h_multi poly h_poly_in_S x
+            have t2 := Finsupp.mem_support_iff.mp hx
+            rw [degreeOf_le_iff] at t1
+            have dx_le_one := t1 d hd_in_support
+            grind
+          · simp
+
+        rw [← h_sum_eq_card]
+        apply Nat.lt_succ_of_le
+        have t1 := le_totalDegree hd_in_support
+        have t2 := h_total poly h_poly_in_S
+        exact le_trans t1 t2
+      · rw [Finset.mem_powersetCard]
+        constructor
+        · simp
+        · rfl
+    · unfold to_monomial
+      congr 1
+      ext x
+      simp
+      have h_decomp : d = ∑ i ∈ d.support, Finsupp.single i 1 := by
+        ext y
+        simp [Finsupp.coe_finset_sum, Finset.sum_apply, Finsupp.single_apply]
+        split_ifs
+        · assumption
+        · simp_all
+          -- Convert the coefficient condition to "d is in the support"
+          have h_mem : d ∈ poly.support := Finsupp.mem_support_iff.mpr hd_in_support
+
+          --Use the hypothesis that polynomials in S are multilinear (degree ≤ 1 per var)
+          have h_deg : degreeOf y poly ≤ 1 := h_multi poly h_poly_in_S y
+
+           -- Global degree bound implies local exponent d y is ≤ 1
+          rw [degreeOf_le_iff] at h_deg
+          have h_le : d y ≤ 1 := h_deg d h_mem
+          grind
+      rw [←h_decomp]
+
+  -- Linear Independence Bound: |S| ≤ |M|
+  have h_li_on : LinearIndepOn ℚ (id : MvPolynomial (Fin n) ℚ → MvPolynomial (Fin n) ℚ) S := by
+    exact h_li
+  rw [←h_card_M, ←Fintype.card_coe]
+  rw [←finrank_span_eq_card h_li]
+  apply le_trans (b := Module.finrank ℚ (Submodule.span ℚ (M : Set (MvPolynomial (Fin n) ℚ))))
+  · sorry
+  · sorry
+  /-
+  let VM := Submodule.span ℚ (M : Set (MvPolynomial (Fin n) ℚ))
+  apply le_trans (b := Module.finrank ℚ VM)
+  · sorry
+  · exact finrank_span_le_card M
+  -/
 
 -- Taking the MLE does not change the evaulation (for bitstrings)
-theorem MLE_equal_on_boolean_cube {n : ℕ} (p : MvPolynomial (Fin n) ℚ) :  ∀ f : (Fin n) → ℚ, (∀ i : Fin n , f i = 0 ∨ f i = 1) → eval f p = eval f (MLE p) := by
-  intros f hf
+theorem MLE_equal_on_boolean_cube
+  {n : ℕ}
+  (p : MvPolynomial (Fin n) ℚ) :
+    ∀ f : (Fin n) → ℚ, (∀ i : Fin n , f i = 0 ∨ f i = 1) → eval f p = eval f (MLE p) := by
+  intro f hf
   unfold MLE
   grw[p.as_sum, map_sum, Finsupp.sum]
   simp
   apply Finset.sum_congr rfl
   intro x hx
-  grw[eval_monomial, coeff]
+  grw [eval_monomial, coeff]
   simp
   left
   apply Finset.prod_congr rfl
@@ -160,7 +281,6 @@ theorem MLE_have_deg_1 {n : ℕ} (p : MvPolynomial (Fin n) ℚ) : ∀ i, degreeO
 -- taking the MLE of a polynomial does not increase its total degree
 theorem MLE_total_deg_non_increasing {n k : ℕ} (p : MvPolynomial (Fin n) ℚ) (h : totalDegree p ≤ k) : totalDegree (MLE p) ≤ k := by
   unfold MLE
-  simp
   grw[Finsupp.sum, totalDegree_finset_sum, Finset.sup_le]
   intro b hb
   grw[totalDegree_mul, totalDegree_C, totalDegree_finset_prod]
@@ -200,9 +320,11 @@ theorem deg_extra {n kk : ℕ} (hn : n ≥ 1) (I : Finset (Fin n)) (h : I.card �
   rw [Finset.univ_nonempty_iff]
   exact ⟨0, hn⟩
 
-
 @[simp]
-theorem Ray_Chaudhuri_Wilson {n : ℕ} (F : k_L_Family n) : (∀ l ∈ F.L, l < F.k) → F.card ≤ n.choose F.s := by
+theorem Ray_Chaudhuri_Wilson
+  {n : ℕ}
+  (F : k_L_Family n) :
+    (∀ l ∈ F.L, l < F.k) → F.card ≤ n.choose F.s := by
   intro h
   -- Create Identity Vectors
   let vecs : Finset (Vec n):= (F.elems).image (fun i => Char_Vec i)
