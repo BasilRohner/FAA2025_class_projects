@@ -382,17 +382,20 @@ theorem linearIndependent_of_triangle_eval
 
   rw[h_2] at h
   simp at h
-  have h_set : (s.filter (k ≤ ·)).filter (· = k) = {k} := by
-    sorry
+  have h_wtf2 : k ∈ support_nz := by
+        apply Finset.max'_mem
+  have h_wtf : k ∈ s := by
+      grind
+  have h_set : (s.filter (k ≤ ·)).filter (· = k) = {k} := by --trivial let grind handle this one
+    grind
   rw[h_set] at h
   simp at h
   cases h
   all_goals expose_names
-  sorry
+  grind
   specialize h_diag k
   simp at h_diag
   contradiction
-
 
 @[simp]
 theorem Ray_Chaudhuri_Wilson
