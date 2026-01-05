@@ -326,6 +326,70 @@ theorem deg_extra {n s kk : ℕ} (hn : n ≥ 1) (I : Finset (Fin n)) (h : I.card
   rw [Finset.univ_nonempty_iff]
   exact ⟨0, hn⟩
 
+variable {n : ℕ} {ι : Type*} [LinearOrder ι]
+
+theorem linearIndependent_of_triangle_eval
+  (p : ι → MvPolynomial (Fin n) ℚ)
+  (x : ι → (Fin n → ℚ))
+  (h_tri : ∀ i j, i < j → eval (x j) (p i) = 0)
+  (h_diag : ∀ i, eval (x i) (p i) ≠ 0) :
+  LinearIndependent ℚ p := by
+  rw [linearIndependent_iff']
+  intros s g ha a hs
+  let support_nz := s.filter (fun j => g j ≠ 0)
+  by_contra hx
+  push_neg at hx -- asume not all coefficents are zero
+  have hx :  a ∈ support_nz := by grind
+  have hx : support_nz.Nonempty := by grind
+  let k := support_nz.max' hx
+  let xx := x k -- take as an input the corresponding value for the highest non zero coefficent
+  have h := congr_arg (eval xx) ha
+  simp at h
+  rw[<-Finset.sum_filter_add_sum_filter_not s (· < k)] at h -- split sum into smaller and ≥ k part
+  have h_1 : ∑ x ∈ s with x < k, g x * (eval xx) (p x) = 0 := by --first part is zero by triangle condition
+    rw[Finset.sum_eq_zero]
+    intros x hx
+    refine Rat.mul_eq_zero.mpr ?_
+    right
+    apply h_tri
+    simp_all only [ne_eq, Finset.mem_filter, not_false_eq_true, and_self, not_lt, Finset.max'_le_iff, and_imp,
+      support_nz, k, xx] -- aesop probably overkill
+  rw[h_1] at h
+  simp at h
+  rw[<-Finset.sum_filter_add_sum_filter_not (s.filter (k ≤ ·)) (· = k)] at h
+
+  have h_2 :  ∑ x ∈ {x ∈ s | k ≤ x} with ¬x = k, g x * (eval xx) (p x) = 0 := by  -- > k part is = 0 because of k choosen as max
+    rw[Finset.sum_eq_zero]
+    intros x hx
+    simp at hx
+    have hx : x > k := by grind
+    refine Rat.mul_eq_zero.mpr ?_
+    left
+    have h_x : x ∉ support_nz := by
+      rename_i hx_4
+      simp_all only [ne_eq, Finset.mem_filter, not_false_eq_true, and_self, Finset.max'_le_iff, and_imp, gt_iff_lt,
+        Finset.max'_lt_iff, true_and, Decidable.not_not, support_nz, k, xx]
+      obtain ⟨left, right⟩ := hx_4
+      obtain ⟨left, right_1⟩ := left
+      by_contra hh
+      apply hx at hh
+      simp_all only [lt_self_iff_false]
+      assumption
+    grind
+
+  rw[h_2] at h
+  simp at h
+  have h_set : (s.filter (k ≤ ·)).filter (· = k) = {k} := by
+    sorry
+  rw[h_set] at h
+  simp at h
+  cases h
+  all_goals expose_names
+  sorry
+  specialize h_diag k
+  simp at h_diag
+  contradiction
+
 
 @[simp]
 theorem Ray_Chaudhuri_Wilson
@@ -556,7 +620,7 @@ theorem Ray_Chaudhuri_Wilson
     apply total_degree_bound
     assumption
     assumption
-    sorry -- Linear Independence
+    sorry
 
   -- We show the sets are distinct
   have h_distinct : P1 ∩ P2 = ∅  := by
@@ -577,7 +641,8 @@ theorem Ray_Chaudhuri_Wilson
     obtain ⟨left_1, right_1⟩ := h_2
     subst right
     --  Aesop "blow up" end
-    sorry
+    obtain ⟨z, hh ⟩ := h_P1 w left
+    grind -- essentially just applying this giant lemma
 
   -- hence  the total size is equal to the sum
   have h_card : P1.card + P2.card = (P1 ∪ P2).card := by
@@ -586,15 +651,21 @@ theorem Ray_Chaudhuri_Wilson
   -- We can easily bound the extra polynomials we added
   have h_extra : P2.card = ∑ j ∈  Finset.range (F.s), Nat.choose n j  := by
     have h_card : P2.card = extras.card := by -- extra ≃ P2
-
+      sorry
+    grw[h_card]
+    unfold extras
     sorry
 
-  -- This implies something about P1 (using algebra)
+
+  -- This implies what we want about P1 (using some algebra)
   have h_vec : P1.card ≤ n.choose F.s := by
-    sorry
+    grw[<-h_card, h_extra, Finset.sum_range_succ, Nat.add_comm, Nat.add_le_add_iff_left] at h_union
+    assumption
 
   -- Now we just need to show that 𝔽 ≃ P1
   have hF : Family.card n = P1.card := by
+    have hv : Family.card n = vecs.card := by
+      sorry
     sorry
 
   grw[hF]
