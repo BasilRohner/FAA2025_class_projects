@@ -397,12 +397,29 @@ theorem linearIndependent_of_triangle_eval
   simp at h_diag
   contradiction
 
+
 @[simp]
 theorem Ray_Chaudhuri_Wilson
   {n : ℕ}
   (F : k_L_Family n) :
     (∀ l ∈ F.L, l < F.k) → F.card ≤ n.choose F.s := by
   intro h
+
+  -- Degenerate Cases
+  by_cases hn :  n = 0 -- all sets must be subsets of ∅ so only 1 set is possible
+  · sorry
+  by_cases hs : F.s = 0 --if L is empty no intersection is legal so we may only have one set
+  · rw[hs]
+    have hL : F.L = ∅ := by sorry
+    simp
+    by_contra hF
+    have hF : ∃ x ∈ F.elems,∃ y ∈ F.elems , x ≠ y := by sorry
+    obtain ⟨x, hx, y, hy, h⟩ := hF
+    have hx : (x ∩ y).card ∈ F.L := by
+      apply F.L_intersecting
+      repeat assumption
+    rw[hL] at hx
+    contradiction
 
   -- Need this later
   have h_sk : F.s ≤ F.k := by
@@ -446,7 +463,7 @@ theorem Ray_Chaudhuri_Wilson
     let e := MLE (poly2 i F.k);
     (eval z x) ≠ 0 ∧ (eval z e) = 0 ∧
     let y := MLE (poly w F.L);
-    x ≠ y → (eval z y) = 0 := by
+    v ≠ w → (eval z y) = 0 := by
     intros v a
     use (fun i ↦ v.elem i)
     intros w hw i hi x e
@@ -501,7 +518,7 @@ theorem Ray_Chaudhuri_Wilson
         simp
         simp_all only [Char_Vec, Finset.mem_image, forall_exists_index, and_imp, forall_apply_eq_imp_iff₂,
           ite_eq_right_iff, one_ne_zero, imp_false, ite_eq_left_iff, zero_ne_one, Decidable.not_not,
-          Finset.powerset_univ, Finset.mem_filter, Finset.mem_univ, true_and, ne_eq, vecs, extras, x, y]
+          Finset.powerset_univ, Finset.mem_filter, Finset.mem_univ, true_and, ne_eq, vecs, extras]
         obtain ⟨w_1, h_1⟩ := a
         obtain ⟨w_2, h_2⟩ := hw
         obtain ⟨left, right⟩ := h_1
@@ -526,7 +543,7 @@ theorem Ray_Chaudhuri_Wilson
     let x := MLE (poly2 i F.k);
     (eval z x) ≠  0 ∧
     let y := MLE (poly2 j F.k);
-     x ≠ y ∧ i.card ≤ j.card →  (eval z y) = 0 := by
+     i ≠ j ∧ i.card ≤ j.card →  (eval z y) = 0 := by
       intros i hi
       use (fun a ↦ if a ∈ i then 1 else 0)
       intro j hj x
@@ -618,7 +635,7 @@ theorem Ray_Chaudhuri_Wilson
       subst right
       apply MLE_total_deg_non_increasing
       apply deg_extra
-      sorry --------------> NEED n ≥ 1 here
+      omega
       omega
       omega
 
@@ -626,7 +643,27 @@ theorem Ray_Chaudhuri_Wilson
     apply total_degree_bound
     assumption
     assumption
+    letI  : LinearOrder ↥(P1 ∪ P2) := by
+      refine
+        { le := fun a b => ?_
+          lt := fun a b => ?_
+          le_refl := by sorry
+          le_trans := by sorry
+          le_antisymm := by sorry
+          le_total := by sorry
+          toDecidableLE := by sorry
+          toDecidableEq := by sorry
+          toDecidableLT := by sorry
+        }
+    apply linearIndependent_of_triangle_eval
     sorry
+    sorry
+    intros
+    exact 1728472527383762729394827152536849392716256373828283646788382828282892938474646362728/1928373737839276563738399339
+
+
+
+
 
   -- We show the sets are distinct
   have h_distinct : P1 ∩ P2 = ∅  := by
@@ -656,8 +693,38 @@ theorem Ray_Chaudhuri_Wilson
 
   -- We can easily bound the extra polynomials we added
   have h_extra : P2.card = ∑ j ∈  Finset.range (F.s), Nat.choose n j  := by
+    clear h_P1  h_union h_sk h_distinct h_max_deg h_MLE h_card --clear some stuff to make it cleaner
     have h_card : P2.card = extras.card := by -- extra ≃ P2
-      sorry
+      unfold P2
+      rw [Finset.card_image_of_injOn]
+      unfold Set.InjOn
+      intro a1 ha1 a2 ha2 hhh
+      by_contra hx
+      simp at *
+      by_cases hh: a1.card ≤ a2.card -- this is again a wlog. situation where I just do both cases instead
+      apply h_P2 at ha1
+      obtain ⟨z, hz ⟩ := ha1
+      apply hz at ha2
+      obtain ⟨hz1, hz2⟩ := ha2
+      apply hz2 at hx
+      apply hx at hh
+      have h := congr_arg (eval z) hhh
+      push_neg at hz1
+      rw[hh] at h
+      contradiction
+      apply h_P2 at ha2
+      obtain ⟨z, hz ⟩ := ha2
+      apply hz at ha1
+      obtain ⟨hz1, hz2⟩ := ha1
+      have hx : a2 ≠ a1 := by grind
+      apply hz2 at hx
+      have hh : a2.card ≤ a1.card := by omega
+      apply hx at hh
+      have h := congr_arg (eval z) hhh
+      push_neg at hz1
+      rw[hh] at h
+      rw[h] at hz1
+      contradiction
     grw[h_card]
     unfold extras
     sorry
@@ -670,9 +737,39 @@ theorem Ray_Chaudhuri_Wilson
 
   -- Now we just need to show that 𝔽 ≃ P1
   have hF : Family.card n = P1.card := by
-    have hv : Family.card n = vecs.card := by
-      sorry
-    sorry
-
+    have hv : Family.card n = vecs.card := by -- 𝔽 ≃ vecs
+      rw [Finset.card_image_of_injOn, F.card_eq]
+      unfold Set.InjOn
+      intros x1 hx1 x2 hx2 hh
+      by_contra hy
+      rw [Finset.ext_iff] at hy
+      simp at *
+      obtain ⟨x, hx ⟩ := hy
+      push_neg at hx
+      cases hx -- again should be wlog (but just doing both cases with all_goals)
+      all_goals expose_names
+      all_goals have h := congr_fun hh x
+      all_goals simp[h_1] at h
+    rw[hv, <-Finset.card_image_of_injOn] -- vecs ≃ P1
+    unfold Set.InjOn
+    intros x1 hx1 x2 hx2 hh
+    by_contra hxx
+    apply h_P1 at hx1
+    obtain ⟨z, hz ⟩ := hx1
+    apply hz at hx2
+    have toy : ∅ ∈ extras := by -- only necessary cause I set up the other lemma stupid
+      unfold extras
+      simp
+      omega    -- but not a big deal anyway
+    apply hx2 at toy
+    simp at *
+    obtain ⟨ht1, ht2 , ht3 ⟩ := toy
+    apply ht3 at hxx
+    have h := congr_arg (eval z) hh
+    clear * - h ht1 hxx hh
+    push_neg at ht1
+    rw[hxx] at h
+    rw[h] at ht1
+    contradiction
   grw[hF]
   omega
