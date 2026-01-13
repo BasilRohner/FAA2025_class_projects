@@ -48,7 +48,7 @@ class k_L_Family (n : ℕ) extends L_Family n where
 class L_p_Family (n : ℕ) extends Family n where
   L : Finset ℕ
   s := L.card
-  s_eq : s = L.card
+  s_eq : s = L.card := by rfl
   p : ℕ
   p_prime : p.Prime
   p_neq_one : p ≠ 1
@@ -1336,13 +1336,7 @@ theorem Ray_Chaudhuri_Wilson
   omega
 
 @[simp]
-theorem AlonBabaiSuzuki {n : ℕ} (F : k_L_p_Family n) : F.s ≤ F.p - 1 ∧ F.s + F.k ≤ n
-  → F.card ≤ n.choose F.s := by
-  intro h
-  sorry
-
-@[simp]
-theorem Alon_Babai_Suzuki_attempt
+theorem AlonBabaiSuzuki
     {n : ℕ}
     (hn : n ≥ 1) -- adding this shouldnt be harmful
     (F : k_L_p_Family n) :
@@ -1425,15 +1419,18 @@ theorem Alon_Babai_Suzuki_attempt
       have hk : l = F.k := by
         grw[<-F.k_bounded w_1]
         qify
-        linarith
-        assumption
-      apply h at hl
-      omega
-      grind
+        sorry
+        -- linarith
+        -- assumption
+      sorry
+      sorry
+      -- apply h at hl
+      -- omega
+      -- grind
     · constructor
       · unfold e
         grw[<-MLE_equal_on_boolean_cube]
-        unfold poly_g_Q
+        unfold poly_g_Zp
         grw[eval_mul]
         simp
         left
@@ -1448,13 +1445,15 @@ theorem Alon_Babai_Suzuki_attempt
         subst right right_1
         simp_all only [Finset.sum_ite_mem, Finset.univ_inter, Finset.sum_const, nsmul_eq_mul, mul_one]
         norm_cast
-        grw[<-F.k_bounded w_1, Int.subNat_eq_zero_iff]
-        assumption
+        -- grw[<-F.k_bounded w_1, Int.subNat_eq_zero_iff]
+        -- assumption
+        -- grind
+        sorry
         grind
       · intros y hx
         unfold y
         grw[<-MLE_equal_on_boolean_cube]
-        unfold poly_f_Q
+        unfold poly_f_Zp
         simp
         simp_all only [Char_Vec, Finset.mem_image, forall_exists_index, and_imp, forall_apply_eq_imp_iff₂,
           ite_eq_right_iff, one_ne_zero, imp_false, ite_eq_left_iff, zero_ne_one, Decidable.not_not,
@@ -1469,39 +1468,43 @@ theorem Alon_Babai_Suzuki_attempt
         grw[Finset.prod_eq_zero_iff] -- one term is 0, as w_1 ≠ w_2 and hence w_1 ∩ w_2 ∈ L
         use  ((w_1 ∩ w_2).card)
         constructor
-        · apply F.L_intersecting
-          assumption
-          assumption
-          by_contra hw  -- abstractly just show w1 ≠ w2 assuming f w1 ≠ f w2 (done by aesop)
-          subst hw
-          simp_all only [not_true_eq_false]
-        · linarith
+        · sorry
+          -- apply F.L_intersecting
+          -- assumption
+          -- assumption
+          -- by_contra hw  -- abstractly just show w1 ≠ w2 assuming f w1 ≠ f w2 (done by aesop)
+          -- subst hw
+          -- simp_all only [not_true_eq_false]
+        · sorry
+          -- linarith
         grind
 
+
   --- Needed for Linear Independece (2) / can also use for other shit
-  have h_P2 : ∀ i ∈ extras, ∃ z : ((Fin n) → ℚ), ∀ j ∈ extras,
-    let x := MLE (poly_g_Q i F.k);
+  have h_P2 : ∀ i ∈ extras, ∃ z : ((Fin n) → R), ∀ j ∈ extras,
+    let x := MLE (poly_g_Zp i F.k);
     (eval z x) ≠  0 ∧
-    let y := MLE (poly_g_Q j F.k);
+    let y := MLE (poly_g_Zp j F.k);
      x ≠ y ∧ i.card ≤ j.card →  (eval z y) = 0 := by
       intros i hi
       use (fun a ↦ if a ∈ i then 1 else 0)
       intro j hj x
       constructor
-      · unfold x poly_g_Q
+      · unfold x poly_g_Zp
         grw[<-MLE_equal_on_boolean_cube]
         simp
         constructor
         norm_cast  -- i.card < s ≤ k
-        grw[Int.subNat_eq_zero_iff]
-        have hI : i.card < F.k := by
-          grw[<-h_sk]
-          unfold extras at hi
-          grind
-        omega
-        grw[Finset.prod_eq_zero_iff] -- if every term is 1, Π cant be 0
-        simp
-        grind
+        sorry
+        -- grw[Int.subNat_eq_zero_iff]
+        -- have hI : i.card < F.k := by
+        --   grw[<-h_sk]
+        --   unfold extras at hi
+        --   grind
+        -- omega
+        -- grw[Finset.prod_eq_zero_iff] -- if every term is 1, Π cant be 0
+        -- simp
+        -- grind
       · intro y hh
         unfold y poly_g_Q
         grw[<-MLE_equal_on_boolean_cube]
@@ -1551,7 +1554,7 @@ theorem Alon_Babai_Suzuki_attempt
 
   have h_max_deg : ∀ poly ∈ P1 ∪ P2, poly.totalDegree ≤ F.s := by
     have hL : (F.L).card = F.s := by
-      grw[F.L_card_eq]
+      grw[F.s_eq]
     grw[<-hL]
     intros pq hpq
     grw[Finset.mem_union] at hpq
@@ -1589,7 +1592,7 @@ theorem Alon_Babai_Suzuki_attempt
       congr!
 
   -- We show the sets are distinct
-  have h_distinct : P1 ∩ P2 = ∅  := by
+  have h_distinct : P1 ∩ P2 = ∅ := by
     by_contra hh
     change P1 ∩ P2 ≠ ∅ at hh
     rw [← Finset.nonempty_iff_ne_empty, Finset.Nonempty] at hh
@@ -1674,12 +1677,6 @@ theorem Alon_Babai_Suzuki_attempt
     · intro i j hij; ext x; replace hij := congr_arg ( fun f => f.elem x ) hij; aesop;
   grw[hF]
   omega
-
-@[simp]
-theorem AlonBabaiSuzuki {n : ℕ} (F : k_L_p_Family n) : F.s ≤ F.p - 1 ∧ F.s + F.k ≤ n
-  → F.card ≤ n.choose F.s := by
-  intro h
-  sorry
 
 -- The main result
 
