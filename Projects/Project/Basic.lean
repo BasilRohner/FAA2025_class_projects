@@ -1341,6 +1341,346 @@ theorem AlonBabaiSuzuki {n : ℕ} (F : k_L_p_Family n) : F.s ≤ F.p - 1 ∧ F.s
   intro h
   sorry
 
+@[simp]
+theorem Alon_Babai_Suzuki_attempt
+    {n : ℕ}
+    (hn : n ≥ 1) -- adding this shouldnt be harmful
+    (F : k_L_p_Family n) :
+    F.s ≤ F.p - 1 ∧ F.s + F.k ≤ n → F.card ≤ n.choose F.s := by
+
+  intro ⟨h1, h2⟩
+  let p := F.p
+  let R := ZMod p
+
+    -- nontriviality
+  have : (Nontrivial (ZMod p)) := by
+    apply nontrivial_iff.2
+    use 0
+    use 1
+    have : ZMod.val (0 : ZMod p) = 0 := by
+      apply ZMod.val_zero
+    have : ZMod.val (1 : ZMod p) = 1 := by
+      have bound : 1 < p := by
+        unfold p
+        exact F.p_prime.one_lt
+      have := Fact.mk bound
+      apply ZMod.val_one
+    grind
+
+  -- nozerodiv
+  have : (NoZeroDivisors (ZMod p)) := by
+    have := F.p_neq_one
+    have := F.p_prime
+    have := Fact.mk this
+    exact inferInstance
+
+  -- Create Identity Vectors
+  let vecs : Finset (Vec n):= (F.elems).image (fun i ↦ Char_Vec (R := R) i)
+
+  -- Need this later to show that MLE of polynomials are different
+  have h_vec : ∀ v ∈ vecs, ∀ i : Fin n, v.elem i = 0 ∨ v.elem i = 1 := by
+    intros v hv i
+    unfold vecs at hv -- (aesop proof so could definetly be cleaner/shorter ....)
+    simp_all only [Char_Vec, Finset.mem_image]
+    obtain ⟨w, h_1⟩ := hv
+    obtain ⟨left, right⟩ := h_1
+    subst right
+    simp_all only [ite_eq_right_iff, one_ne_zero, imp_false, ite_eq_left_iff, zero_ne_one, Decidable.not_not]
+    by_cases h : i ∈ w
+    right
+    assumption
+    left
+    assumption
+
+  let extras := (Finset.powerset Finset.univ : Finset (Finset (Fin n))).filter (fun s => s.card < F.s)
+
+  let P1 := (vecs).image (fun i => MLE (poly_f_Zp i F.L))
+  let P2 := (extras).image (fun i => MLE (poly_g_Zp (p := p) i F.k))
+
+  --- Needed for Linear Independece (1) / can also use for other shit
+  have h_P1 : ∀ v ∈ vecs,  ∃ z : ((Fin n) → R) , ∀ w ∈ vecs, ∀ i ∈ extras,
+    let x := MLE (poly_f_Zp v F.L);
+    let e := MLE (poly_g_Zp i F.k);
+    (eval z x) ≠ 0 ∧ (eval z e) = 0 ∧
+    let y := MLE (poly_f_Zp w F.L);
+    x ≠ y → (eval z y) = 0 := by
+    intros v a
+    use (fun i ↦ v.elem i)
+    intros w hw i hi x e
+    constructor
+    · simp_all only [Char_Vec, Finset.mem_image, forall_exists_index, and_imp, forall_apply_eq_imp_iff₂, ite_eq_right_iff, one_ne_zero, imp_false, ite_eq_left_iff, zero_ne_one, Decidable.not_not, Finset.powerset_univ,
+      Finset.mem_filter, Finset.mem_univ, true_and, ne_eq, vecs, extras, x] -- let aesop clean up some expressions
+      obtain ⟨w_1, h_1⟩ := a
+      obtain ⟨w_2, h_2⟩ := hw
+      obtain ⟨left, right⟩ := h_1
+      obtain ⟨left_1, right_1⟩ := h_2
+      subst right right_1
+      simp_all only  --aesop end
+      unfold poly_f_Zp
+      grw[<-MLE_equal_on_boolean_cube, eval_prod]
+      simp
+      grw[Finset.prod_eq_zero_iff] -- only 0 if one term is 0 => |w_1| ∈ L contradiction
+      simp
+      intro l hl hh
+      have hk : l = F.k := by
+        grw[<-F.k_bounded w_1]
+        qify
+        linarith
+        assumption
+      apply h at hl
+      omega
+      grind
+    · constructor
+      · unfold e
+        grw[<-MLE_equal_on_boolean_cube]
+        unfold poly_g_Q
+        grw[eval_mul]
+        simp
+        left
+        -- AESOP blow up
+        simp_all only [Char_Vec, Finset.mem_image, forall_exists_index, and_imp, forall_apply_eq_imp_iff₂,
+          ite_eq_right_iff, one_ne_zero, imp_false, ite_eq_left_iff, zero_ne_one, Decidable.not_not,
+          Finset.powerset_univ, Finset.mem_filter, Finset.mem_univ, true_and, vecs, extras]
+        obtain ⟨w_1, h_1⟩ := a
+        obtain ⟨w_2, h_2⟩ := hw
+        obtain ⟨left, right⟩ := h_1
+        obtain ⟨left_1, right_1⟩ := h_2
+        subst right right_1
+        simp_all only [Finset.sum_ite_mem, Finset.univ_inter, Finset.sum_const, nsmul_eq_mul, mul_one]
+        norm_cast
+        grw[<-F.k_bounded w_1, Int.subNat_eq_zero_iff]
+        assumption
+        grind
+      · intros y hx
+        unfold y
+        grw[<-MLE_equal_on_boolean_cube]
+        unfold poly_f_Q
+        simp
+        simp_all only [Char_Vec, Finset.mem_image, forall_exists_index, and_imp, forall_apply_eq_imp_iff₂,
+          ite_eq_right_iff, one_ne_zero, imp_false, ite_eq_left_iff, zero_ne_one, Decidable.not_not,
+          Finset.powerset_univ, Finset.mem_filter, Finset.mem_univ, true_and, ne_eq, vecs, extras, x, y]
+        obtain ⟨w_1, h_1⟩ := a
+        obtain ⟨w_2, h_2⟩ := hw
+        obtain ⟨left, right⟩ := h_1
+        obtain ⟨left_1, right_1⟩ := h_2
+        subst right right_1
+        simp_all only [mul_ite, mul_one, mul_zero, Finset.sum_ite_mem, Finset.univ_inter, Finset.sum_const,
+          nsmul_eq_mul]
+        grw[Finset.prod_eq_zero_iff] -- one term is 0, as w_1 ≠ w_2 and hence w_1 ∩ w_2 ∈ L
+        use  ((w_1 ∩ w_2).card)
+        constructor
+        · apply F.L_intersecting
+          assumption
+          assumption
+          by_contra hw  -- abstractly just show w1 ≠ w2 assuming f w1 ≠ f w2 (done by aesop)
+          subst hw
+          simp_all only [not_true_eq_false]
+        · linarith
+        grind
+
+  --- Needed for Linear Independece (2) / can also use for other shit
+  have h_P2 : ∀ i ∈ extras, ∃ z : ((Fin n) → ℚ), ∀ j ∈ extras,
+    let x := MLE (poly_g_Q i F.k);
+    (eval z x) ≠  0 ∧
+    let y := MLE (poly_g_Q j F.k);
+     x ≠ y ∧ i.card ≤ j.card →  (eval z y) = 0 := by
+      intros i hi
+      use (fun a ↦ if a ∈ i then 1 else 0)
+      intro j hj x
+      constructor
+      · unfold x poly_g_Q
+        grw[<-MLE_equal_on_boolean_cube]
+        simp
+        constructor
+        norm_cast  -- i.card < s ≤ k
+        grw[Int.subNat_eq_zero_iff]
+        have hI : i.card < F.k := by
+          grw[<-h_sk]
+          unfold extras at hi
+          grind
+        omega
+        grw[Finset.prod_eq_zero_iff] -- if every term is 1, Π cant be 0
+        simp
+        grind
+      · intro y hh
+        unfold y poly_g_Q
+        grw[<-MLE_equal_on_boolean_cube]
+        simp
+        right
+        grw[Finset.prod_eq_zero_iff] -- as |i| ≤ |j| and i ≠ j one term of the product should be 0
+        have hJ : ∃ ele ∈ j, ele ∉ i := by
+          by_contra he
+          simp at he
+          grw[<-Finset.subset_iff] at he
+          apply Finset.eq_iff_card_le_of_subset at he -- does exactly what we need
+          obtain ⟨hh1, hh2⟩ := hh
+          obtain ⟨he1, he2⟩ := he
+          apply he1 at hh2
+          subst hh2
+          contradiction
+        obtain ⟨e, he1, he2 ⟩ := hJ
+        use e
+        constructor
+        · assumption
+        · simp
+          assumption
+        grind
+
+  -- Essentially just instantiate the lemmas
+  have h_MLE : ∀ poly ∈ P1 ∪ P2, ∀ (i : Fin n), degreeOf i poly ≤ 1 := by
+    intros pq hpq
+    clear *- pq hpq -- make it readable
+    grw[Finset.mem_union] at hpq
+    cases hpq
+    · all_goals expose_names
+      unfold P1 at h
+      intro i --aesop clean up start
+      simp_all only [Char_Vec, Finset.mem_image, exists_exists_and_eq_and, vecs]
+      obtain ⟨w, h⟩ := h
+      obtain ⟨left, right⟩ := h
+      subst right  --aesop clean up end
+      apply MLE_degreeOf_le
+    · all_goals expose_names
+      unfold P2 at h
+      intro i --aesop clean up start
+      simp_all only [Finset.powerset_univ, Finset.mem_image, Finset.mem_filter, Finset.mem_univ, true_and, extras]
+      obtain ⟨w, h⟩ := h
+      obtain ⟨left, right⟩ := h
+      subst right --aesop clean up end
+      apply MLE_degreeOf_le
+
+  have h_max_deg : ∀ poly ∈ P1 ∪ P2, poly.totalDegree ≤ F.s := by
+    have hL : (F.L).card = F.s := by
+      grw[F.L_card_eq]
+    grw[<-hL]
+    intros pq hpq
+    grw[Finset.mem_union] at hpq
+    cases hpq
+    · all_goals expose_names
+      unfold P1 at h_1
+      simp_all only [Char_Vec, Finset.mem_image, exists_exists_and_eq_and, vecs]
+      obtain ⟨w, h_1⟩ := h_1
+      obtain ⟨left, right⟩ := h_1
+      subst right
+      apply MLE_totalDegree_non_increasing
+      apply deg_main_Q -- here need to the Q alternative
+      omega
+
+    · all_goals expose_names
+      unfold P2 at h_1
+      simp_all only [Finset.powerset_univ, Finset.mem_image, Finset.mem_filter, Finset.mem_univ, true_and, extras]
+      obtain ⟨w, h_1⟩ := h_1
+      obtain ⟨left, right⟩ := h_1
+      subst right
+      apply MLE_totalDegree_non_increasing
+      apply deg_extra_Q
+      exact hn
+      omega
+      omega
+
+  have h_union : (P1 ∪ P2).card ≤ ∑ j ∈  Finset.range (F.s + 1), Nat.choose n j := by
+    apply total_degree_bound_Zp
+    assumption
+    assumption
+    convert P1_P2_linear_independent F h;
+    · ext; simp [P1, P2, P1_family, P2_family];
+      bound;
+    · ext; simp [P1, P2, P1_family, P2_family];
+      congr!
+
+  -- We show the sets are distinct
+  have h_distinct : P1 ∩ P2 = ∅  := by
+    by_contra hh
+    change P1 ∩ P2 ≠ ∅ at hh
+    rw [← Finset.nonempty_iff_ne_empty, Finset.Nonempty] at hh
+    obtain ⟨x, hx⟩ := hh
+    grw[Finset.mem_inter] at hx
+    obtain ⟨hx1, hx2⟩ := hx
+    -- Again some Aesop "blow up"
+    simp_all only [Char_Vec, Finset.mem_image, forall_exists_index, and_imp, forall_apply_eq_imp_iff₂,
+      ite_eq_right_iff, one_ne_zero, imp_false, ite_eq_left_iff, zero_ne_one, Decidable.not_not, Finset.powerset_univ,
+      Finset.mem_filter, Finset.mem_univ, true_and, ne_eq, Finset.mem_union, exists_exists_and_eq_and, vecs, extras,
+      P1, P2]
+    obtain ⟨w, h_1⟩ := hx1
+    obtain ⟨w_1, h_2⟩ := hx2
+    obtain ⟨left, right⟩ := h_1
+    obtain ⟨left_1, right_1⟩ := h_2
+    subst right
+    --  Aesop "blow up" end
+    obtain ⟨z, hh ⟩ := h_P1 w left
+    grind -- essentially just applying this giant lemma
+
+  -- hence  the total size is equal to the sum
+  have h_card : P1.card + P2.card = (P1 ∪ P2).card := by
+    grw[Finset.card_union,h_distinct, Finset.card_empty, Nat.sub_zero]
+
+  -- We can easily bound the extra polynomials we added
+  have h_extra : P2.card = ∑ j ∈  Finset.range (F.s), Nat.choose n j  := by
+    have h_card : P2.card = extras.card := by -- extra ≃ P2
+      -- **todo** polish
+      -- To prove injectivity, assume two different subsets J and K map to the same polynomial. Then their characteristic vectors must be the same, implying J = K.
+      have h_inj : ∀ J K : Finset (Fin n), J ∈ extras → K ∈ extras → (MLE (poly_g_Q J (F.k : ℚ))) = (MLE (poly_g_Q K (F.k : ℚ))) → J = K := by
+        intros J K hJ hK h_eq
+        have h_char_vec : ∀ f : Fin n → ℚ, (∀ i, f i = 0 ∨ f i = 1) → (MLE (poly_g_Q J (F.k : ℚ))).eval f = (MLE (poly_g_Q K (F.k : ℚ))).eval f := by
+          exact fun f hf => h_eq ▸ rfl;
+        have h_char_vec_eq : ∀ f : Fin n → ℚ, (∀ i, f i = 0 ∨ f i = 1) → (poly_g_Q J (F.k : ℚ)).eval f = (poly_g_Q K (F.k : ℚ)).eval f := by
+          intros f hf;
+          convert h_char_vec f hf using 1 <;> rw [ MLE_equal_on_boolean_cube ];
+          · exact hf;
+          · exact hf;
+        -- By choosing f to be the characteristic vector of J, we can show that K must be a subset of J.
+        have h_subset_J : K ⊆ J := by
+          intro i hi; specialize h_char_vec_eq ( fun j => if j ∈ J then 1 else 0 ) ; simp_all +decide [ Finset.prod_ite, Finset.filter_mem_eq_inter ] ;
+          simp_all +decide [ poly_g_Q ];
+          contrapose! h_char_vec_eq;
+          rw [ Finset.prod_eq_zero hi ] <;> norm_num [ h_char_vec_eq ];
+          exact ⟨ fun i => by tauto, sub_ne_zero_of_ne <| mod_cast ne_of_lt <| lt_of_lt_of_le ( Finset.mem_filter.mp hJ |>.2 ) h_sk ⟩;
+        have h_subset_K : J ⊆ K := by
+          intro i hi; specialize h_char_vec_eq ( fun j => if j ∈ K then 1 else 0 ) ; simp_all +decide [ Finset.subset_iff ] ;
+          simp_all +decide [ poly_g_Q ];
+          contrapose! h_char_vec_eq;
+          -- Since $K$ is a subset of $J$ and $i \in J$ but $i \notin K$, the product $\prod_{j \in J} \mathbf{1}_{j \in K}$ is zero.
+          have h_prod_zero : ∏ j ∈ J, (if j ∈ K then 1 else 0 : ℚ) = 0 := by
+            rw [ Finset.prod_eq_zero hi ] ; aesop;
+          simp_all +decide [ sub_eq_iff_eq_add ];
+          exact ⟨ fun i => by tauto, by rw [ eq_sub_iff_add_eq ] ; norm_cast; linarith [ Finset.mem_filter.mp hK ] ⟩;
+        exact subset_antisymm h_subset_K h_subset_J;
+      exact Finset.card_image_of_injOn fun J hJ K hK hJK => h_inj J K hJ hK hJK
+    grw[h_card]
+    unfold extras
+    -- The set of subsets with cardinality less than s is exactly the union of the sets of subsets with cardinality j for each j from 0 to s-1.
+    have h_union : Finset.filter (fun s : Finset (Fin n) => s.card < F.s) (Finset.powerset (Finset.univ : Finset (Fin n))) = Finset.biUnion (Finset.range (F.s)) (fun j => Finset.powersetCard j (Finset.univ : Finset (Fin n))) := by
+      ext; simp [Finset.mem_biUnion, Finset.mem_powersetCard];
+    rw [ h_union, Finset.card_biUnion ];
+    · simp +decide [ Finset.card_univ ];
+    · exact fun i hi j hj hij => Finset.disjoint_left.mpr fun x hx₁ hx₂ => hij <| by rw [ Finset.mem_powersetCard ] at hx₁ hx₂; aesop;
+
+  -- This implies what we want about P1 (using some algebra)
+  have h_vec : P1.card ≤ n.choose F.s := by
+    grw[<-h_card, h_extra, Finset.sum_range_succ, Nat.add_comm, Nat.add_le_add_iff_left] at h_union
+    assumption
+
+  -- Now we just need to show that 𝔽 ≃ P1
+  have hF : Family.card n = P1.card := by
+    have hv : Family.card n = vecs.card := by
+      rw [ Finset.card_image_of_injective ];
+      · exact F.card_eq;
+      · intro i j hij; ext a; replace hij := congr_arg ( fun f => f.elem a ) hij; aesop;
+    rw [ hv, Finset.card_image_of_injective ];
+    · convert hv using 1;
+      · exact?;
+      · convert P1_card_eq F h using 1;
+        exact hv.symm;
+    · intro i j hij; ext x; replace hij := congr_arg ( fun f => f.elem x ) hij; aesop;
+  grw[hF]
+  omega
+
+@[simp]
+theorem AlonBabaiSuzuki {n : ℕ} (F : k_L_p_Family n) : F.s ≤ F.p - 1 ∧ F.s + F.k ≤ n
+  → F.card ≤ n.choose F.s := by
+  intro h
+  sorry
+
 -- The main result
 
 @[simp]
