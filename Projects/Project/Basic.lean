@@ -255,7 +255,7 @@ lemma No_clique
         exact Subtype.val_injective
       grw[hL, hS, h_card] at hf
       repeat omega
-      exact trivial_fact_0 p hhp
+      exact trivial_fact_0 p hp2
 
 lemma No_indset
   (p : ℕ) (hp : Nat.Prime p)
@@ -324,8 +324,22 @@ lemma No_indset
           L := L,
           s_eq := by rfl
           k := p^2 - 1,
-          k_bounded := by exact hk,
-          k_not := by sorry,
+          k_bounded := by
+            intro F hf
+            grind,
+          k_not := by
+            intros l hl
+            unfold L at hl
+            simp at *
+            obtain ⟨ a, ha ⟩ := hl
+            rw[Nat.pow_two, trivial_fact_3 p hhp]
+            push_neg
+            rw [← ha]
+            have h_lt_pred : ↑a < p - 1 := a.isLt
+            have h_lt_p : ↑a < p := Nat.lt_of_lt_of_le h_lt_pred (Nat.sub_le p 1)
+            rw [Nat.mod_eq_of_lt h_lt_p]
+            exact Nat.ne_of_lt h_lt_pred
+            ,
           p := p,
           p_prime := hp,
           p_neq_one := by linarith,
@@ -343,7 +357,7 @@ lemma No_indset
       exact Subtype.val_injective
 
     have hf : T_val.card ≤ (p ^ 3).choose L.card := by
-      apply AlonBabaiSuzuki fam
+      apply AlonBabaiSuzuki _ fam
       constructor
       simp_all only [le_refl, k, L, T_val, fam]
       simp_all only [ k, L, T_val, fam] -- this below here is probably a one liner somehow
@@ -361,6 +375,7 @@ lemma No_indset
       trivial
       grw[Nat.pow_two, hhp]
       trivial
+      exact trivial_fact_0 p hp2
     grw[hL, hT] at hf
     omega
 
