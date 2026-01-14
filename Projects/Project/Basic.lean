@@ -48,7 +48,7 @@ instance (p : ℕ) : Fintype (vertices p) :=
 @[simp]
 def Explicit_Ramsey_Graph (p : ℕ) : SimpleGraph (vertices p) :=
   {
-    Adj := fun A B ↦ (A.val ∩ B.val).card.mod p = p - 1 ∧ A.val ≠ B.val,
+    Adj := fun A B ↦ (A.val ∩ B.val).card %p = p - 1 ∧ A.val ≠ B.val,
     symm := by
       intro V U h
       rw [Finset.inter_comm, ne_comm]
@@ -64,6 +64,12 @@ instance (p : ℕ) : DecidableRel (Explicit_Ramsey_Graph p).Adj := by
   simp
   exact instDecidableAnd
 
+lemma trivial_fact_0 (p : ℕ) (h : p > 0) :  1 ≤ p^3 := by
+  have hh : p ≥ 1 := by omega
+  have h : 3 = 1 + 1 + 1 := by omega
+  rw[h, Nat.pow_add, Nat.pow_add, Nat.pow_one]
+  grw[hh]
+
 lemma trivial_fact_1 (p : ℕ) (h : p ≥ 2) :  1 + p ≤ p * p := by
   induction' p with p ih
   · contradiction
@@ -74,7 +80,7 @@ lemma trivial_fact_2 {α : Type*} [DecidableEq α] (A B : Finset α) : Finset.ca
   apply Finset.card_mono
   simp
 
- lemma trivial_fact_3 (p : ℕ) (h : p ≥ 2) : (p * p - 1).mod p = p - 1 := by
+ lemma trivial_fact_3 (p : ℕ) (h : p ≥ 2) : (p * p - 1) %p = p - 1 := by
   apply Nat.mod_eq_iff.2
   right
   constructor
@@ -162,7 +168,7 @@ lemma No_clique
               ne_eq, Finset.mem_range, S_val, L]
         obtain ⟨w, h⟩ := f1
         obtain ⟨w_1, h_1⟩ := f2
-        have hF_inter_1 : (F1 ∩ F2).card.mod p = p - 1 := by -- one should be able to pull this out of the definition (just like for the IS but somehow I cant)
+        have hF_inter_1 : (F1 ∩ F2).card %p = p - 1 := by -- one should be able to pull this out of the definition (just like for the IS but somehow I cant)
           simp[Set.Pairwise] at h_clique
           specialize h_clique F1 w
           apply h_clique at h
@@ -179,7 +185,7 @@ lemma No_clique
           by_contra hp3 -- should be simpler
           have hp3 : (F1 ∩ F2).card < p -1 := by omega
           have hp4 : (F1 ∩ F2).card  < p := by omega
-          have hp5 : (F1 ∩ F2).card.mod p < p -1 := by
+          have hp5 : (F1 ∩ F2).card %p < p -1 := by
             apply Nat.mod_lt_of_lt
             assumption
           omega
@@ -249,8 +255,7 @@ lemma No_clique
         exact Subtype.val_injective
       grw[hL, hS, h_card] at hf
       repeat omega
-      sorry
-
+      exact trivial_fact_0 p hhp
 
 lemma No_indset
   (p : ℕ) (hp : Nat.Prime p)
@@ -273,7 +278,7 @@ lemma No_indset
     obtain ⟨h_ind, h_card⟩ := h
     let L : Finset ℕ := (Finset.univ : Finset (Fin (p-1))).image Fin.val
     let T_val : Finset (Finset (Fin (p^3))) := T.image Subtype.val
-    let hk : ∀ F ∈ T_val, F.card.mod p = (p ^ 2 - 1).mod p := by
+    let hk : ∀ F ∈ T_val, F.card %p = (p ^ 2 - 1) %p := by
       intro F hF
       simp_all only [ge_iff_le, gt_iff_lt, not_and, Decidable.not_not, Finset.mem_image, Subtype.exists,
               exists_and_right, exists_eq_right, k, T_val, Set.Pairwise]
@@ -281,13 +286,13 @@ lemma No_indset
       obtain ⟨w, h⟩ := hF
       simp_all only
 
-    let hL : (∀ F ∈ T_val, F.card.mod p ∉ L) ∧ ∀ F1 ∈ T_val, ∀ F2 ∈ T_val, F1 ≠ F2 → (F1 ∩ F2).card.mod p ∈ L:= by
+    let hL : (∀ F ∈ T_val, F.card %p ∉ L) ∧ ∀ F1 ∈ T_val, ∀ F2 ∈ T_val, F1 ≠ F2 → (F1 ∩ F2).card %p ∈ L:= by
       constructor
       intro F hf
       refine Finset.forall_mem_not_eq'.mp ?_
       intro b hb hn
       simp_all [L, T_val, Finset.mem_image, Set.Pairwise]
-      have hF : F.card.mod p = (p-1) := by
+      have hF : F.card %p = (p-1) := by
         subst hn
         simp_all only [Finset.mem_image, Subtype.exists, exists_and_right, exists_eq_right, k, T_val, hk]
         obtain ⟨w, h⟩ := hf
@@ -298,9 +303,9 @@ lemma No_indset
       intros F1 hF1 F2 hF2 hF
       refine mem_image_univ_iff_mem_range.mpr ?_
       simp_all [ T_val, Set.Pairwise]
-      have h_max : (F1 ∩ F2).card.mod p < p := by -- somehow necessary
+      have h_max : (F1 ∩ F2).card %p < p := by -- somehow necessary
         apply Nat.mod_lt (F1 ∩ F2).card (by exact hp2)
-      have h_uneq : (F1 ∩ F2).card.mod p ≠ p -1 := by
+      have h_uneq : (F1 ∩ F2).card %p ≠ p -1 := by
         simp_all only [ne_eq, k]
         obtain ⟨w, h⟩ := hF1
         obtain ⟨w_1, h_1⟩ := hF2
@@ -378,4 +383,3 @@ theorem Explicit_Ramsey_Graph_Correctness
     · intro T
       dsimp [k]
       exact No_indset p hp h₂ h₁ T
--/

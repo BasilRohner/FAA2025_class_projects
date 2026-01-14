@@ -17,7 +17,8 @@ import Projects.Project.Families
 import Projects.Project.MLE
 
 set_option maxHeartbeats 400000000
-set_option diagnostics true
+
+set_option linter.unusedSimpArgs false
 
 open MvPolynomial
 
@@ -52,36 +53,6 @@ lemma nozerodiv_Zp {p : ℕ} (hp : p.Prime) : NoZeroDivisors (ZMod p) := by
   have := hp.ne_one
   have := Fact.mk hp
   exact inferInstance
-
-structure Vec {α : Type*} (n : ℕ) where
-  elem : Fin n → α
-  deriving DecidableEq
-
-@[simp]
-def Char_Vec
-    {R : Type*}
-    [CommSemiring R]
-    {n : ℕ}
-    (S : Finset (Fin n))
-    [DecidablePred (fun i ↦ i ∈ S)] :
-    Vec (α := R) n where
-  elem := fun i ↦ if i ∈ S then (1 : R) else (0 : R)
-
-@[simp]
-def vec_dot
-    {R : Type*}
-    [CommSemiring R]
-    {n : ℕ}
-    (v w : Vec (α := R) n) : R :=
-  ∑ i : Fin n, v.elem i * w.elem i
-
-theorem char_vec_dot_inter
-    {R : Type*}
-    [CommSemiring R]
-    {n : ℕ}
-    (U W : ⟦n⟧) :
-    vec_dot (Char_Vec (R := R) U) (Char_Vec (R := R) W) = (U ∩ W).card := by
-  simp [Finset.inter_comm]
 
 noncomputable def poly_f_Zp
     {n p : ℕ}
@@ -195,20 +166,7 @@ lemma eval_poly_f_Zp_self
     rw [←h_eq] at ah
     assumption
   by_contra h_eq
-  have h_a : a < F.p := by
-    have h_k : F.k < F.p := by
-      have := F.k_bounded S hS
-      symm at this
-      have := Nat.mod_lt S.card (F.p_prime.pos)
-      expose_names
-      rw [←this_2] at this
-      assumption
-    linarith [hL a ah]
-  apply h_diff
-  have := Nat.mod_eq_of_lt h_a
-  rw [←this]
-  apply (ZMod.natCast_eq_natCast_iff' S.card a F.p).1
-  assumption
+  sorry
 
 lemma eval_poly_f_Zp_other
     {n : ℕ}
@@ -242,7 +200,7 @@ lemma eval_poly_g_Zp_vecs
     unfold vec_f_Zp at hv; aesop;
   -- Since $S$ is a $k$-set, we have $\sum_{i \in S} v_i = k$.
   have h_sum : ∑ i ∈ Finset.univ, (v.elem i) = F.k := by
-    rw [ ← F.k_bounded S hS.1 ] ; aesop;
+    sorry
   unfold poly_g_Zp; aesop;
 
 lemma poly_f_family_card

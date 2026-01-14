@@ -33,5 +33,5 @@ class L_p_Family (n : ℕ) extends Family n where
 
 class k_L_p_Family (n : ℕ) extends L_p_Family n where
   k : ℕ
-  k_bounded : ∀ F ∈ elems, (F.card % p) = k
-  k_not : ∀ l ∈ L , (l % p) ≠ k
+  k_bounded : ∀ F ∈ elems, (F.card % p) = (k % p)
+  k_not : ∀ l ∈ L , (l % p) ≠ (k % p)

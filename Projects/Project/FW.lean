@@ -17,7 +17,7 @@ import Projects.Project.Families
 import Projects.Project.MLE
 
 set_option maxHeartbeats 400000000
-set_option diagnostics true
+set_option linter.unusedSimpArgs false
 
 open MvPolynomial
 
@@ -37,36 +37,6 @@ lemma Zp_properties
     grind
   · have := Fact.mk hp
     exact inferInstance
-
-structure Vec {α : Type*} (n : ℕ) where
-  elem : Fin n → α
-  deriving DecidableEq
-
-@[simp]
-def Char_Vec
-    {R : Type*}
-    [CommSemiring R]
-    {n : ℕ}
-    (S : Finset (Fin n))
-    [DecidablePred (fun i ↦ i ∈ S)] :
-    Vec (α := R) n where
-  elem := fun i ↦ if i ∈ S then (1 : R) else (0 : R)
-
-@[simp]
-def vec_dot
-    {R : Type*}
-    [CommSemiring R]
-    {n : ℕ}
-    (v w : Vec (α := R) n) : R :=
-  ∑ i : Fin n, v.elem i * w.elem i
-
-theorem char_vec_dot_inter
-    {R : Type*}
-    [CommSemiring R]
-    {n : ℕ}
-    (U W : ⟦n⟧) :
-    vec_dot (Char_Vec (R := R) U) (Char_Vec (R := R) W) = (U ∩ W).card := by
-  simp [Finset.inter_comm]
 
 noncomputable def poly_f_Zp
     {n p : ℕ}
