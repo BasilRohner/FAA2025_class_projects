@@ -166,7 +166,13 @@ lemma eval_poly_f_Zp_self
     rw [←h_eq] at ah
     assumption
   by_contra h_eq
-  sorry
+  -- Since $S.card \equiv a \pmod{p}$, we have $S.card \% p = a$.
+  have h_mod_eq : S.card % L_p_Family.p n = a % L_p_Family.p n := by
+    exact?;
+  -- Since $a < p$, we have $a \% p = a$.
+  have h_a_mod_p : a % L_p_Family.p n = a := by
+    exact Nat.mod_eq_of_lt ( lt_of_lt_of_le ( hL a ah ) ( Nat.le_of_not_lt fun h => by have := F.k_bounded S hS; have := F.k_not a ah; aesop ) );
+  aesop
 
 lemma eval_poly_f_Zp_other
     {n : ℕ}
@@ -200,7 +206,20 @@ lemma eval_poly_g_Zp_vecs
     unfold vec_f_Zp at hv; aesop;
   -- Since $S$ is a $k$-set, we have $\sum_{i \in S} v_i = k$.
   have h_sum : ∑ i ∈ Finset.univ, (v.elem i) = F.k := by
-    sorry
+    unfold vec_f_Zp at hv; aesop;
+    have h1 := F.k_bounded S left
+    have h2 := ZMod.val_natCast F.p S.card
+    have h3 := ZMod.val_natCast F.p F.k
+    rw [←h2, ←h3] at h1
+    clear * - h1
+    have : NeZero (L_p_Family.p n) := by
+      exact NeZero.of_pos F.p_prime.pos
+    exact ZMod.val_injective _ h1
+
+  -- Since $S$ is a $k$-set, we have $\sum_{i \in S} v_i = k$.
+  have h_sum : ∑ i ∈ Finset.univ, (v.elem i) = F.k := by
+    have := F.k_bounded S hS.1;
+    simp_all +decide [ ← ZMod.natCast_eq_natCast_iff' ]
   unfold poly_g_Zp; aesop;
 
 lemma poly_f_family_card
@@ -299,7 +318,8 @@ lemma poly_g_family_linear_independence
       (eval z (MLE (poly_g_Zp i (F.k : ZMod F.p))) ≠ 0) ∧
       (∀ j ∈ vec_g_Zp F.s, MLE (poly_g_Zp i (F.k : ZMod F.p)) ≠ MLE (poly_g_Zp j (F.k : ZMod F.p)) ∧
         i.card ≤ j.card → eval z (MLE (poly_g_Zp j (F.k : ZMod F.p))) = 0) := by
-  admit
+  sorry
+  -- here we would need to use the Möbius inversion formula
 
 lemma poly_g_poly_f_family_disjoint
     {n : ℕ}
@@ -495,18 +515,10 @@ theorem AlonBabaiSuzuki
     use (fun a ↦ if a ∈ i then 1 else 0)
     intro j hj x1 x2
     constructor
-    · admit
-      /-
-      grw[Int.subNat_eq_zero_iff]
-      have hI : i.card < F.k := by
-        grw[<-h_sk]
-        unfold extras at hi
-        grind
-      omega
-      grw[Finset.prod_eq_zero_iff] -- if every term is 1, Π cant be 0
-      simp
-      grind
-      -/
+    · unfold x1
+      change (eval (Char_Vec (R := ZMod p) i).elem) _ ≠ 0
+      -- here only need that the evaluation of poly_g_Zp on its Char_Vec ≠ 0
+      sorry
     · intro hh
       unfold x2 poly_g_Zp
       grw[<-MLE_equal_on_boolean_cube]
@@ -597,13 +609,13 @@ theorem AlonBabaiSuzuki
     subst right
     --  Aesop "blow up" end
     obtain ⟨z, hh⟩ := h_poly_f w left
-    admit
+    sorry
 
   have h_card : poly_f.card + poly_g.card = (poly_f ∪ poly_g).card := by
     grw [Finset.card_union, h_disjoint, Finset.card_empty, Nat.sub_zero]
 
   have h_poly_g_card : poly_g.card = ∑ j ∈ Finset.range (F.s), n.choose j := by
-    admit
+    sorry
 
   have h_poly_f_card : poly_f.card ≤ n.choose F.s := by
     grw [←h_card, h_poly_g_card, Finset.sum_range_succ, Nat.add_comm, Nat.add_le_add_iff_left] at h_union
@@ -632,9 +644,13 @@ theorem AlonBabaiSuzuki
       ext x
       by_contra!
       cases this <;> expose_names
-      · admit
+      · -- here we need to use that the polynomials, evaluated at different points are different
+        have := congr_arg (eval x) hij
+        sorry
       · obtain ⟨h1, h2⟩ := h
-        admit
+        -- same here
+        have := congr_arg (eval x) hij
+        sorry
 
   grw [h_F_card]
   omega
