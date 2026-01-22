@@ -170,12 +170,12 @@ lemma eval_poly_f_Zp_other
 @[simp]
 theorem Test
     {n : ℕ}
-    (hn : n ≥ 1) -- adding this shouldnt be harmful
     (F : k_L_p_Family n)
+    (hn : n ≥ 1) -- adding this shouldnt be harmful
     (hp : F.p.Prime)
     (hL1 : ∀ l ∈ F.L, l < F.p) -- unnecessary but convinient
     (hL2 : ∀ l ∈ F.L, l % F.p ≠ F.s % F.p)
-    (hL3 : F.s < F.k % F.p)
+    (hL3 : F.s = F.k % F.p)
     : F.card ≤ n.choose F.s := by
 
     haveI : Nontrivial (ZMod (L_p_Family.p n)) := nontrivial_Zp hp
@@ -308,13 +308,15 @@ theorem Test
             push_neg
             by_contra ha
             simp [extras] at hi
-            have := lt_trans hi hL3
-            rw [sub_eq_zero] at ha
-            rw [←ZMod.val_natCast] at this
-            rw [←ha] at this
-            rw [ZMod.val_natCast] at this
-            have h_le := Nat.mod_le i.card F.p
-            linarith
+            grw[hL3] at hi
+            have hh: i.card % F.p = F.k % F.p := by
+              rw [sub_eq_zero] at ha
+              exact
+                Eq.symm
+                  ((fun a b c ↦ (ZMod.natCast_eq_natCast_iff' a b c).mp) (k_L_p_Family.k n) i.card
+                    (L_p_Family.p n) (id (Eq.symm ha)))
+            rw[<-hh] at hi
+            exact Nat.lt_irrefl _ (lt_of_lt_of_le hi (Nat.mod_le _ _))
             by_contra h
             rw[Finset.prod_eq_zero_iff] at h
             obtain ⟨a, ha1, ha2⟩ := h
@@ -410,6 +412,7 @@ theorem Test
       rw [linearIndependent_iff']
       clear * -
       intro s g h j hj
+<<<<<<< HEAD
       -- if j ∈ P1 then we evaluate at j to cancel all other terms
       -- **todo**: should have a theorem that for all coefficients in P1 triviality holds, then can use in the second step
       rcases Finset.mem_union.mp j.2 with hj_P1 | hj_P2
@@ -465,6 +468,19 @@ theorem Test
           sorry
       -- if j ∈ P2
       · -- TODO: Here need to leverage the fact that we have shown before that tha α coefficients are 0
+=======
+      rw [Finset.sum_eq_add_sum_diff_singleton hj (fun x ↦ g x • (x : MvPolynomial (Fin n) (ZMod F.p)))] at h
+      have : ∑ x ∈ s \ {j}, g x • (x : MvPolynomial (Fin n) (ZMod F.p)) = 0 := by
+        apply Finset.sum_eq_zero
+        intro x hx
+        simp
+        sorry
+      rw [this] at h
+      simp at h
+      cases h
+      · assumption
+      · expose_names
+>>>>>>> 08506113cbe19f76cc66330bc107500869ce1f10
         sorry
 
     have h_distinct : P1 ∩ P2 = ∅  := by

@@ -22,11 +22,12 @@ import Mathlib.LinearAlgebra.Dimension.StrongRankCondition
 import Projects.Project.Families
 import Projects.Project.MLE
 import Projects.Project.RCW
-import Projects.Project.ABS
+import Projects.Project.test
 
 set_option maxHeartbeats 400000000
 -- The main result
 set_option linter.unusedSimpArgs false
+set_option linter.unnecessarySimpa false
 
 @[simp]
 def Diagonal_Ramsey
@@ -318,6 +319,8 @@ lemma No_indset
         · simp_all only [not_false_eq_true]
         · exact a
       omega
+
+
     let fam : k_L_p_Family (p^3) := by
         refine {
           elems := T_val,
@@ -357,25 +360,30 @@ lemma No_indset
       exact Subtype.val_injective
 
     have hf : T_val.card ≤ (p ^ 3).choose L.card := by
-      apply AlonBabaiSuzuki _ fam
-      constructor
-      simp_all only [le_refl, k, L, T_val, fam]
-      simp_all only [ k, L, T_val, fam] -- this below here is probably a one liner somehow
-      apply Nat.le_of_succ_le
-      apply  Nat.le_of_succ_le
-      simp
+      have : L = fam.L := rfl
+      have h1: L = (Finset.univ : Finset (Fin (p-1))).image Fin.val := rfl
+      have h2 : p = fam.p := rfl
+      have h3 : p^2- 1 = fam.k := rfl
+
+      apply Test fam _ hp _ _ _
+      simp at *
       have help : p^3 = p * p * p := by linarith
-      grw[Nat.add_comm, Nat.add_assoc, Nat.sub_add_cancel, <-Nat.add_assoc, Nat.add_sub_cancel', Nat.pow_two, help]
-      nth_grw 1 [<-Nat.mul_one p]
-      grw[<-Nat.mul_add]
-      have help2 :  1 + p ≤ p*p :=  by exact trivial_fact_1 p hhp
-      grw[help2]
+      grw[help, hhp]
       linarith
-      grw[hhp]
-      trivial
-      grw[Nat.pow_two, hhp]
-      trivial
-      exact trivial_fact_0 p hp2
+      intro l hl
+      grind
+      intros l hl
+      grw[fam.s_eq, <-this, hL]
+      have hL1 : (p-1)%p = p-1 := by
+        exact Nat.self_sub_mod p 1
+      have hL2 :  l % p = l := by
+        have hL3 : l < p := by
+          grind
+        exact Nat.mod_eq_of_lt hL3
+      rw[<-h2, hL2, hL1]
+      grind
+      grw[fam.s_eq, <-this, hL, <-h2, <-h3, Nat.pow_two, trivial_fact_3]
+      exact hhp
     grw[hL, hT] at hf
     omega
 
