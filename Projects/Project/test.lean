@@ -167,9 +167,20 @@ theorem Test
         grw[Finset.prod_eq_zero_iff] -- only 0 if one term is 0 => |w_1| ∈ L contradiction
         simp
         intro l hl hh
-        sorry --easy
-        grind
-
+        rw [sub_eq_zero] at hh
+        have := F.k_not l hl
+        rw [←F.k_bounded w_1 left] at this
+        rw [←ZMod.val_natCast] at this
+        rw [←ZMod.val_natCast] at this
+        symm at hh
+        rw[hh] at this
+        contradiction
+        · intro i
+          by_cases h_case : i ∈ w_1
+          · right
+            grind
+          · left
+            grind
       · constructor
         · unfold e
           grw[<-MLE_equal_on_boolean_cube]
@@ -186,8 +197,11 @@ theorem Test
           obtain ⟨left_1, right_1⟩ := h_2
           subst right right_1
           simp_all only [Finset.sum_ite_mem, Finset.univ_inter, Finset.sum_const, nsmul_eq_mul, mul_one]
-          sorry -- easy
-          sorry --easy
+          rw [sub_eq_zero] -- easy
+          have := F.k_bounded w_1 left
+          sorry
+          -- rw [this]
+          sorry
         · intros y hx
           unfold y
           grw[<-MLE_equal_on_boolean_cube]
@@ -205,6 +219,7 @@ theorem Test
           grw[Finset.prod_eq_zero_iff] -- one term is 0, as w_1 ≠ w_2 and hence w_1 ∩ w_2 ∈ L
           use  (Nat.cast (w_1 ∩ w_2).card)
           constructor
+          have := F.L_p_intersecting.2 w_1 left w_2 left_1
           sorry -- by def
           simp
           sorry -- by def
