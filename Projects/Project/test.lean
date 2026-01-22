@@ -442,5 +442,6 @@ theorem Test
         · intro i j hij; ext a; replace hij := congr_arg ( fun f => f.elem a ) hij; aesop;
       rw [ hv, Finset.card_image_of_injective ];
       sorry
+      sorry
     grw[hF]
     omega
