@@ -170,12 +170,12 @@ lemma eval_poly_f_Zp_other
 @[simp]
 theorem Test
     {n : ℕ}
-    (hn : n ≥ 1) -- adding this shouldnt be harmful
     (F : k_L_p_Family n)
+    (hn : n ≥ 1) -- adding this shouldnt be harmful
     (hp : F.p.Prime)
     (hL1 : ∀ l ∈ F.L, l < F.p) -- unnecessary but convinient
     (hL2 : ∀ l ∈ F.L, l % F.p ≠ F.s % F.p)
-    (hL3 : F.s < F.k % F.p)
+    (hL3 : F.s = F.k % F.p)
     : F.card ≤ n.choose F.s := by
 
     haveI : Nontrivial (ZMod (L_p_Family.p n)) := nontrivial_Zp hp
@@ -308,13 +308,14 @@ theorem Test
             push_neg
             by_contra ha
             simp [extras] at hi
-            have := lt_trans hi hL3
+            /-have := lt_trans hi hL3
             rw [sub_eq_zero] at ha
             rw [←ZMod.val_natCast] at this
             rw [←ha] at this
             rw [ZMod.val_natCast] at this
             have h_le := Nat.mod_le i.card F.p
-            linarith
+            linarith-/
+            sorry
             by_contra h
             rw[Finset.prod_eq_zero_iff] at h
             obtain ⟨a, ha1, ha2⟩ := h
@@ -414,12 +415,14 @@ theorem Test
       have : ∑ x ∈ s \ {j}, g x • (x : MvPolynomial (Fin n) (ZMod F.p)) = 0 := by
         apply Finset.sum_eq_zero
         intro x hx
+        simp
         sorry
       rw [this] at h
       simp at h
       cases h
       · assumption
-      · sorry
+      · expose_names
+        sorry
 
     have h_distinct : P1 ∩ P2 = ∅  := by
       by_contra hh
