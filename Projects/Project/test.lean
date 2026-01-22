@@ -199,9 +199,19 @@ theorem Test
           simp_all only [Finset.sum_ite_mem, Finset.univ_inter, Finset.sum_const, nsmul_eq_mul, mul_one]
           rw [sub_eq_zero] -- easy
           have := F.k_bounded w_1 left
-          sorry
+          rw [ZMod.natCast_eq_natCast_iff']
+          assumption
           -- rw [this]
-          sorry
+          simp [vecs] at a
+          obtain ⟨a, ahl, ahr⟩ := a
+          rw [←ahr]
+          simp
+          intro i
+          by_cases i ∈ a
+          · right
+            assumption
+          · left
+            assumption
         · intros y hx
           unfold y
           grw[<-MLE_equal_on_boolean_cube]
@@ -217,12 +227,25 @@ theorem Test
           simp_all only [mul_ite, mul_one, mul_zero, Finset.sum_ite_mem, Finset.univ_inter, Finset.sum_const,
             nsmul_eq_mul]
           grw[Finset.prod_eq_zero_iff] -- one term is 0, as w_1 ≠ w_2 and hence w_1 ∩ w_2 ∈ L
-          use  (Nat.cast (w_1 ∩ w_2).card)
+          -- use  (Nat.cast (w_1 ∩ w_2).card)
+          use ((w_1 ∩ w_2).card % F.p)
           constructor
           have := F.L_p_intersecting.2 w_1 left w_2 left_1
-          sorry -- by def
+          apply this
+          by_contra!
+          apply hx
+          rw [this]
           simp
-          sorry -- by def
+          simp [vecs] at a
+          obtain ⟨a, ahl, ahr⟩ := a
+          rw [←ahr]
+          simp
+          intro i
+          by_cases i ∈ a
+          · right
+            assumption
+          · left
+            assumption
 
     have h_P2 : ∀ i ∈ extras, ∃ z : ((Fin n) → ZMod F.p), ∀ j ∈ extras,
         let x := MLE (poly_g_Zp i F.k);
@@ -239,10 +262,23 @@ theorem Test
             constructor
             push_neg
             by_contra ha
-            sorry --by def basically
-            grw[Finset.prod_eq_zero_iff] -- if every term is 1, Π cant be 0
-            simp
-            grind
+            simp [extras] at hi
+            have := lt_trans hi hL3
+            rw [sub_eq_zero] at ha
+            rw [←ZMod.val_natCast] at this
+            rw [←ha] at this
+            rw [ZMod.val_natCast] at this
+            have h_le := Nat.mod_le i.card F.p
+            linarith
+            intro h
+            simp [extras] at hi
+            sorry -- I'm not sure this can be shown
+            intro i_1
+            by_cases h_case : i_1 ∈ i
+            · right
+              grind
+            · left
+              grind
           · intro y hh
             unfold y poly_g_Zp
             grw[<-MLE_equal_on_boolean_cube]
@@ -291,8 +327,9 @@ theorem Test
 
     have h_max_deg : ∀ poly ∈ P1 ∪ P2, poly.totalDegree ≤ F.s := by
       have hL : (F.L).card = F.s := by
-
-        sorry -- should be by def, might need to change definition
+        have := F.s_eq
+        symm
+        assumption
       grw[<-hL]
       intros pq hpq
       grw[Finset.mem_union] at hpq
@@ -324,6 +361,8 @@ theorem Test
       apply total_degree_bound_Zp
       assumption
       assumption
+      rw [linearIndependent_iff']
+      intro s g h i is
       sorry -- Linear Independence should be doable using h_P1, h_P2
 
     have h_distinct : P1 ∩ P2 = ∅  := by
