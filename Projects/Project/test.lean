@@ -362,8 +362,10 @@ theorem Test
       assumption
       assumption
       rw [linearIndependent_iff']
-      intro s g h i is
-      sorry -- Linear Independence should be doable using h_P1, h_P2
+      clear * -
+      intro s g h j hj
+      rw [Finset.sum_eq_add_sum_diff_singleton hj (fun x ↦ g x • (x : MvPolynomial (Fin n) (ZMod F.p)))] at h
+      sorry
 
     have h_distinct : P1 ∩ P2 = ∅  := by
       by_contra hh
