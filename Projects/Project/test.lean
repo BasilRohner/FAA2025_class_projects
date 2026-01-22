@@ -122,6 +122,7 @@ theorem deg_main_Zp --degree bound fot poly_f_ℤ/pℤ
   grw[totalDegree_mul,  totalDegree_C, totalDegree_X]
 
 
+
 @[simp]
 theorem Test
     {n : ℕ}
@@ -148,7 +149,7 @@ theorem Test
       let e := MLE (poly_g_Zp i F.k);
       (eval z x) ≠ 0 ∧ (eval z e) = 0 ∧
       let y := MLE (poly_f_Zp w F.L);
-      x ≠ y → (eval z y) = 0 := by
+      v ≠ w → (eval z y) = 0 := by
       intros v a
       use (fun i ↦ v.elem i)
       intros w hw i hi x e
@@ -167,9 +168,20 @@ theorem Test
         grw[Finset.prod_eq_zero_iff] -- only 0 if one term is 0 => |w_1| ∈ L contradiction
         simp
         intro l hl hh
-        sorry --easy
-        grind
-
+        rw [sub_eq_zero] at hh
+        have := F.k_not l hl
+        rw [←F.k_bounded w_1 left] at this
+        rw [←ZMod.val_natCast] at this
+        rw [←ZMod.val_natCast] at this
+        symm at hh
+        rw[hh] at this
+        contradiction
+        · intro i
+          by_cases h_case : i ∈ w_1
+          · right
+            grind
+          · left
+            grind
       · constructor
         · unfold e
           grw[<-MLE_equal_on_boolean_cube]
@@ -186,8 +198,21 @@ theorem Test
           obtain ⟨left_1, right_1⟩ := h_2
           subst right right_1
           simp_all only [Finset.sum_ite_mem, Finset.univ_inter, Finset.sum_const, nsmul_eq_mul, mul_one]
-          sorry -- easy
-          sorry --easy
+          rw [sub_eq_zero] -- easy
+          have := F.k_bounded w_1 left
+          rw [ZMod.natCast_eq_natCast_iff']
+          assumption
+          -- rw [this]
+          simp [vecs] at a
+          obtain ⟨a, ahl, ahr⟩ := a
+          rw [←ahr]
+          simp
+          intro i
+          by_cases i ∈ a
+          · right
+            assumption
+          · left
+            assumption
         · intros y hx
           unfold y
           grw[<-MLE_equal_on_boolean_cube]
@@ -203,17 +228,31 @@ theorem Test
           simp_all only [mul_ite, mul_one, mul_zero, Finset.sum_ite_mem, Finset.univ_inter, Finset.sum_const,
             nsmul_eq_mul]
           grw[Finset.prod_eq_zero_iff] -- one term is 0, as w_1 ≠ w_2 and hence w_1 ∩ w_2 ∈ L
-          use  (Nat.cast (w_1 ∩ w_2).card)
+          -- use  (Nat.cast (w_1 ∩ w_2).card)
+          use ((w_1 ∩ w_2).card % F.p)
           constructor
-          sorry -- by def
+          have := F.L_p_intersecting.2 w_1 left w_2 left_1
+          apply this
+          by_contra!
+          apply hx
+          rw [this]
           simp
-          sorry -- by def
+          simp [vecs] at a
+          obtain ⟨a, ahl, ahr⟩ := a
+          rw [←ahr]
+          simp
+          intro i
+          by_cases i ∈ a
+          · right
+            assumption
+          · left
+            assumption
 
     have h_P2 : ∀ i ∈ extras, ∃ z : ((Fin n) → ZMod F.p), ∀ j ∈ extras,
         let x := MLE (poly_g_Zp i F.k);
         (eval z x) ≠  0 ∧
         let y := MLE (poly_g_Zp j F.k);
-        x ≠ y ∧ i.card ≤ j.card →  (eval z y) = 0 := by
+        i ≠ j ∧ i.card ≤ j.card →  (eval z y) = 0 := by
           intros i hi
           use (fun a ↦ if a ∈ i then 1 else 0)
           intro j hj x
@@ -224,10 +263,24 @@ theorem Test
             constructor
             push_neg
             by_contra ha
-            sorry --by def basically
-            grw[Finset.prod_eq_zero_iff] -- if every term is 1, Π cant be 0
-            simp
-            grind
+            simp [extras] at hi
+            have := lt_trans hi hL3
+            rw [sub_eq_zero] at ha
+            rw [←ZMod.val_natCast] at this
+            rw [←ha] at this
+            rw [ZMod.val_natCast] at this
+            have h_le := Nat.mod_le i.card F.p
+            linarith
+            by_contra h
+            rw[Finset.prod_eq_zero_iff] at h
+            obtain ⟨a, ha1, ha2⟩ := h
+            simp[ha1] at ha2
+            intro i_1
+            by_cases h_case : i_1 ∈ i
+            · right
+              grind
+            · left
+              grind
           · intro y hh
             unfold y poly_g_Zp
             grw[<-MLE_equal_on_boolean_cube]
@@ -276,8 +329,9 @@ theorem Test
 
     have h_max_deg : ∀ poly ∈ P1 ∪ P2, poly.totalDegree ≤ F.s := by
       have hL : (F.L).card = F.s := by
-
-        sorry -- should be by def, might need to change definition
+        have := F.s_eq
+        symm
+        assumption
       grw[<-hL]
       intros pq hpq
       grw[Finset.mem_union] at hpq
@@ -309,7 +363,11 @@ theorem Test
       apply total_degree_bound_Zp
       assumption
       assumption
-      sorry -- Linear Independence should be doable using h_P1, h_P2
+      rw [linearIndependent_iff']
+      clear * -
+      intro s g h j hj
+      rw [Finset.sum_eq_add_sum_diff_singleton hj (fun x ↦ g x • (x : MvPolynomial (Fin n) (ZMod F.p)))] at h
+      sorry
 
     have h_distinct : P1 ∩ P2 = ∅  := by
       by_contra hh
@@ -336,16 +394,53 @@ theorem Test
 
 
     have h_extra : P2.card = ∑ j ∈  Finset.range (F.s), Nat.choose n j  := by
-      -- should be doable by h_P2
-      sorry
+      clear h_union h_distinct h_max_deg h_MLE h_card --clear some stuff to make it cleaner
+      have h_card : P2.card = extras.card := by
+        unfold P2
+        rw [Finset.card_image_of_injOn]
+        unfold Set.InjOn
+        intro a1 ha1 a2 ha2 hhh
+        by_contra hx
+        simp at *
+        by_cases hh: a1.card ≤ a2.card -- this is again a wlog. situation where I just do both cases instead
+        have hP := h_P2 a1 ha1
+        obtain ⟨z, hz ⟩ := hP
+        have hz :=  hz a2 ha2
+        obtain ⟨h1, h2⟩ := hz
+        have h2 := h2 hx hh
+        have h :=  congr_arg (eval z) hhh
+        rw[h2] at h
+        contradiction
+        have hh : a2.card ≤ a1.card := by omega
+        have hx : a2 ≠ a1 := by grind
+        have hP := h_P2 a2 ha2
+        obtain ⟨z, hz ⟩ := hP
+        have hz :=  hz a1 ha1
+        obtain ⟨h1, h2⟩ := hz
+        have h2 := h2 hx hh
+        have h := congr_arg (eval z) hhh
+        rw[h2] at h
+        symm at h
+        contradiction
+      rw[h_card]
+      unfold extras
+      have h_union : Finset.filter (fun s : Finset (Fin n) => s.card < F.s) (Finset.powerset (Finset.univ : Finset (Fin n))) = Finset.biUnion (Finset.range (F.s)) (fun j => Finset.powersetCard j (Finset.univ : Finset (Fin n))) := by
+        ext; simp [Finset.mem_biUnion, Finset.mem_powersetCard];
+      rw [ h_union, Finset.card_biUnion ];
+      · simp +decide [ Finset.card_univ ];
+      · exact fun i hi j hj hij => Finset.disjoint_left.mpr fun x hx₁ hx₂ => hij <| by rw [ Finset.mem_powersetCard ] at hx₁ hx₂; aesop;
+
 
     have h_vec : P1.card ≤ n.choose F.s := by
       grw[<-h_card, h_extra, Finset.sum_range_succ, Nat.add_comm, Nat.add_le_add_iff_left] at h_union
       assumption
 
     have hF : Family.card n = P1.card := by
-      --should be doable by h_P1
+      have hv : Family.card n = vecs.card := by
+        rw [ Finset.card_image_of_injective ];
+        · exact F.card_eq;
+        · intro i j hij; ext a; replace hij := congr_arg ( fun f => f.elem a ) hij; aesop;
+      rw [ hv, Finset.card_image_of_injective ];
       sorry
-
     grw[hF]
     omega
