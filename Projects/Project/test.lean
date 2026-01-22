@@ -166,6 +166,7 @@ lemma eval_poly_f_Zp_other
   rw [this, ZMod.natCast_mod, Finset.inter_comm]
   simp
 
+
 @[simp]
 theorem Test
     {n : ℕ}
@@ -192,7 +193,7 @@ theorem Test
       let e := MLE (poly_g_Zp i F.k);
       (eval z x) ≠ 0 ∧ (eval z e) = 0 ∧
       let y := MLE (poly_f_Zp w F.L);
-      x ≠ y → (eval z y) = 0 := by
+      v ≠ w → (eval z y) = 0 := by
       intros v a
       use (fun i ↦ v.elem i)
       intros w hw i hi x e
@@ -295,7 +296,7 @@ theorem Test
         let x := MLE (poly_g_Zp i F.k);
         (eval z x) ≠  0 ∧
         let y := MLE (poly_g_Zp j F.k);
-        x ≠ y ∧ i.card ≤ j.card →  (eval z y) = 0 := by
+        i ≠ j ∧ i.card ≤ j.card →  (eval z y) = 0 := by
           intros i hi
           use (fun a ↦ if a ∈ i then 1 else 0)
           intro j hj x
@@ -314,9 +315,10 @@ theorem Test
             rw [ZMod.val_natCast] at this
             have h_le := Nat.mod_le i.card F.p
             linarith
-            intro h
-            simp [extras] at hi
-            sorry -- I'm not sure this can be shown
+            by_contra h
+            rw[Finset.prod_eq_zero_iff] at h
+            obtain ⟨a, ha1, ha2⟩ := h
+            simp[ha1] at ha2
             intro i_1
             by_cases h_case : i_1 ∈ i
             · right
@@ -444,8 +446,42 @@ theorem Test
 
 
     have h_extra : P2.card = ∑ j ∈  Finset.range (F.s), Nat.choose n j  := by
-      -- should be doable by h_P2
-      sorry
+      clear h_union h_distinct h_max_deg h_MLE h_card --clear some stuff to make it cleaner
+      have h_card : P2.card = extras.card := by
+        unfold P2
+        rw [Finset.card_image_of_injOn]
+        unfold Set.InjOn
+        intro a1 ha1 a2 ha2 hhh
+        by_contra hx
+        simp at *
+        by_cases hh: a1.card ≤ a2.card -- this is again a wlog. situation where I just do both cases instead
+        have hP := h_P2 a1 ha1
+        obtain ⟨z, hz ⟩ := hP
+        have hz :=  hz a2 ha2
+        obtain ⟨h1, h2⟩ := hz
+        have h2 := h2 hx hh
+        have h :=  congr_arg (eval z) hhh
+        rw[h2] at h
+        contradiction
+        have hh : a2.card ≤ a1.card := by omega
+        have hx : a2 ≠ a1 := by grind
+        have hP := h_P2 a2 ha2
+        obtain ⟨z, hz ⟩ := hP
+        have hz :=  hz a1 ha1
+        obtain ⟨h1, h2⟩ := hz
+        have h2 := h2 hx hh
+        have h := congr_arg (eval z) hhh
+        rw[h2] at h
+        symm at h
+        contradiction
+      rw[h_card]
+      unfold extras
+      have h_union : Finset.filter (fun s : Finset (Fin n) => s.card < F.s) (Finset.powerset (Finset.univ : Finset (Fin n))) = Finset.biUnion (Finset.range (F.s)) (fun j => Finset.powersetCard j (Finset.univ : Finset (Fin n))) := by
+        ext; simp [Finset.mem_biUnion, Finset.mem_powersetCard];
+      rw [ h_union, Finset.card_biUnion ];
+      · simp +decide [ Finset.card_univ ];
+      · exact fun i hi j hj hij => Finset.disjoint_left.mpr fun x hx₁ hx₂ => hij <| by rw [ Finset.mem_powersetCard ] at hx₁ hx₂; aesop;
+
 
     have h_vec : P1.card ≤ n.choose F.s := by
       grw[<-h_card, h_extra, Finset.sum_range_succ, Nat.add_comm, Nat.add_le_add_iff_left] at h_union
