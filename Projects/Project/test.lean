@@ -410,16 +410,36 @@ theorem Test
       rw [linearIndependent_iff']
       clear * -
       intro s g h j hj
-      rw [Finset.sum_eq_add_sum_diff_singleton hj (fun x ↦ g x • (x : MvPolynomial (Fin n) (ZMod F.p)))] at h
-      have : ∑ x ∈ s \ {j}, g x • (x : MvPolynomial (Fin n) (ZMod F.p)) = 0 := by
-        apply Finset.sum_eq_zero
-        intro x hx
+      -- if j ∈ P1 then we evaluate at j to cancel all other terms
+      rcases Finset.mem_union.mp j.2 with hj_P1 | hj_P2
+      · rw [Finset.sum_eq_add_sum_diff_singleton hj (fun j ↦ g j • (j : MvPolynomial (Fin n) (ZMod F.p)))] at h
+        -- the sum cancels
+        have h_sum_zero : ∑ x ∈ s \ {j}, g x • (x : MvPolynomial (Fin n) (ZMod F.p)) = 0 := by
+          -- this we show by distinguishing the summands in P1 and P2
+          rw [←Finset.sum_filter_add_sum_filter_not (s \ {j}) (fun x ↦ (x : MvPolynomial (Fin n) (ZMod F.p)) ∈ P1)]
+          -- show for summands in P1
+          have h_sum_P1 : ∑ x ∈ (s \ {j}).filter (fun x ↦ ↑x ∈ P1), g x • (x : MvPolynomial (Fin n) (ZMod F.p)) = 0 := by
+            -- show that all summands are zero
+            sorry
+          -- show for summands in P2
+          have h_sum_P2 : ∑ x ∈ (s \ {j}).filter (fun x ↦ ↑x ∉ P1), g x • (x : MvPolynomial (Fin n) (ZMod F.p)) = 0 := by
+            -- show that all summands are zero
+            sorry
+          rw [h_sum_P1, h_sum_P2]
+          simp
+        simp [h_sum_zero] at h
+        cases h
+        · assumption
+        · by_contra!
+          expose_names
+          clear * - hj_P1 h
+          rw [h] at hj_P1
+          simp [P1, vecs, poly_f_Zp] at hj_P1
+          obtain ⟨a, hal, har⟩ := hj_P1
+          sorry
+      -- if j ∈ P2
+      · -- TODO: Here need to leverage the fact that we have shown before that tha α coefficients are 0
         sorry
-      rw [this] at h
-      simp at h
-      cases h
-      · assumption
-      · sorry
 
     have h_distinct : P1 ∩ P2 = ∅  := by
       by_contra hh
