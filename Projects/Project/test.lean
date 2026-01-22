@@ -308,14 +308,15 @@ theorem Test
             push_neg
             by_contra ha
             simp [extras] at hi
-            /-have := lt_trans hi hL3
-            rw [sub_eq_zero] at ha
-            rw [←ZMod.val_natCast] at this
-            rw [←ha] at this
-            rw [ZMod.val_natCast] at this
-            have h_le := Nat.mod_le i.card F.p
-            linarith-/
-            sorry
+            grw[hL3] at hi
+            have hh: i.card % F.p = F.k % F.p := by
+              rw [sub_eq_zero] at ha
+              exact
+                Eq.symm
+                  ((fun a b c ↦ (ZMod.natCast_eq_natCast_iff' a b c).mp) (k_L_p_Family.k n) i.card
+                    (L_p_Family.p n) (id (Eq.symm ha)))
+            rw[<-hh] at hi
+            exact Nat.lt_irrefl _ (lt_of_lt_of_le hi (Nat.mod_le _ _))
             by_contra h
             rw[Finset.prod_eq_zero_iff] at h
             obtain ⟨a, ha1, ha2⟩ := h
