@@ -37,7 +37,10 @@ lemma Zp_properties
   · have := Fact.mk hp
     exact inferInstance
 
-lemma nontrivial_Zp {p : ℕ} (hp : p.Prime) : Nontrivial (ZMod p) := by
+lemma nontrivial_Zp
+  {p : ℕ}
+  (hp : p.Prime) :
+  Nontrivial (ZMod p) := by
   apply nontrivial_iff.2
   use 0
   use 1
@@ -121,6 +124,47 @@ theorem deg_main_Zp --degree bound fot poly_f_ℤ/pℤ
     grind
   grw[totalDegree_mul,  totalDegree_C, totalDegree_X]
 
+lemma eval_poly_f_Zp_self
+    {n : ℕ}
+    (F : k_L_p_Family n)
+    (S : ⟦n⟧)
+    (hS : S ∈ F.elems) :
+    eval (Char_Vec (R := ZMod F.p) S).elem (poly_f_Zp (Char_Vec (R := ZMod F.p) S) F.L) ≠ 0 := by
+  have := nontrivial_Zp F.p_prime
+  have := nozerodiv_Zp F.p_prime
+  unfold poly_f_Zp
+  simp
+  push_neg
+  apply Finset.prod_ne_zero_iff.2
+  intro a ah
+  rw [sub_ne_zero]
+  by_contra!
+  have h := ZMod.natCast_eq_natCast_iff' S.card a F.p
+  apply h.1 at this
+  rw [F.k_bounded S hS] at this
+  have h' := F.k_not a ah
+  symm at this
+  contradiction
+
+lemma eval_poly_f_Zp_other
+    {n : ℕ}
+    (F : k_L_p_Family n)
+    (S T : ⟦n⟧)
+    (hS : S ∈ F.elems)
+    (hT : T ∈ F.elems)
+    (hne : S ≠ T) :
+    eval (Char_Vec (R := ZMod F.p) S).elem (poly_f_Zp (Char_Vec (R := ZMod F.p) T) F.L) = 0 := by
+  have h : ∃ l ∈ F.L, (Finset.card (S ∩ T)).mod F.p = l := by
+    have := F.L_p_intersecting.2 S hS T hT hne
+    use (S ∩ T).card.mod F.p
+  simp [poly_f_Zp]
+  obtain ⟨l, hll, hlr⟩ := h
+  apply Finset.prod_eq_zero hll
+  rw [←hlr]
+  have : (S ∩ T).card.mod F.p = (S ∩ T).card % F.p := by
+    rfl
+  rw [this, ZMod.natCast_mod, Finset.inter_comm]
+  simp
 
 @[simp]
 theorem Test
@@ -365,7 +409,15 @@ theorem Test
       clear * -
       intro s g h j hj
       rw [Finset.sum_eq_add_sum_diff_singleton hj (fun x ↦ g x • (x : MvPolynomial (Fin n) (ZMod F.p)))] at h
-      sorry
+      have : ∑ x ∈ s \ {j}, g x • (x : MvPolynomial (Fin n) (ZMod F.p)) = 0 := by
+        apply Finset.sum_eq_zero
+        intro x hx
+        sorry
+      rw [this] at h
+      simp at h
+      cases h
+      · assumption
+      · sorry
 
     have h_distinct : P1 ∩ P2 = ∅  := by
       by_contra hh
@@ -401,7 +453,79 @@ theorem Test
 
     have hF : Family.card n = P1.card := by
       --should be doable by h_P1
-      sorry
+      have hv : Family.card n = vecs.card := by
+        rw [Finset.card_image_of_injective]
+        · exact F.card_eq
+        · intro i j hij
+          ext a
+          apply congr_arg (·.elem a) at hij
+          unfold Char_Vec at hij
+          clear * - hij
+          constructor
+          · intro h
+            simp [h] at hij
+            assumption
+          · intro h
+            simp [h] at hij
+            assumption
+      rw [hv, Finset.card_image_of_injective]
+      · convert hv using 1
+        · symm
+          exact F.card_eq
+        · clear * -
+          unfold P1
+          apply Finset.card_image_of_injOn
+          intro v hv w hw h_eq
+          simp at h_eq
+          simp [vecs] at hv hw
+          obtain ⟨x, hxl, hxr⟩ := hv
+          obtain ⟨y, hyl, hyr⟩ := hw
+          suffices x = y by
+            rw [this] at hxr
+            rw [hxr] at hyr
+            assumption
+          by_contra!
+          rw [←Char_Vec] at hyr
+          rw [←Char_Vec] at hxr
+          rw [←hxr] at h_eq
+          rw [←hyr] at h_eq
+          have this1 := MLE_equal_on_boolean_cube (poly_f_Zp w F.L) (Char_Vec x |> Vec.elem) ?_
+          have this2 := MLE_equal_on_boolean_cube (poly_f_Zp v F.L) (Char_Vec x |> Vec.elem) ?_
+          have h_eval_1 : eval (Char_Vec (R := ZMod F.p) x).elem (poly_f_Zp (Char_Vec y) F.L) = 0 := by
+            exact eval_poly_f_Zp_other F x y hxl hyl this
+          have h_eval_2 : eval (Char_Vec (R := ZMod F.p) x).elem (poly_f_Zp (Char_Vec x) F.L) ≠ 0 := by
+            exact eval_poly_f_Zp_self F x hxl
+          suffices (eval (Char_Vec x).elem) (poly_f_Zp (Char_Vec y) F.L) = (eval (Char_Vec x).elem) (poly_f_Zp (Char_Vec x) F.L) by
+            rw [h_eval_1] at this
+            rw [←this] at h_eval_2
+            apply h_eval_2
+            rfl
+          rw [←hyr] at this1
+          rw [←hxr] at this2
+          rw [this1, this2, ←h_eq]
+          · intro i
+            unfold Char_Vec
+            by_cases h_case : i ∈ x
+            · simp [h_case]
+            · simp [h_case]
+          · intro i
+            unfold Char_Vec
+            by_cases h_case : i ∈ x
+            · simp [h_case]
+            · simp[h_case]
+          -- apply congr_arg (fun k ↦ eval (Char_Vec x).elem k) at h_eq
+      · intro i j hij
+        ext a
+        apply congr_arg (·.elem a) at hij
+        unfold Char_Vec at hij
+        clear * - hij
+        constructor
+        · intro h
+          simp [h] at hij
+          assumption
+        · intro h
+          simp [h] at hij
+          assumption
 
     grw[hF]
     omega
