@@ -412,7 +412,216 @@ theorem Test
       rw [linearIndependent_iff']
       clear * -
       intro s g h j hj
-      -- if j ∈ P1 then we evaluate at j to cancel all other terms
+
+      -- P1 coefficients 0
+      have coef_a : ∀ x ∈ (s \  {j}).filter (fun x ↦ ↑x ∈ P1), g x = 0 := by
+        intro x hx
+        simp at hx
+        obtain ⟨⟨h1, h2⟩, h3⟩ := hx
+        rw [Finset.sum_eq_add_sum_diff_singleton h1 (fun j ↦ g j • (j : MvPolynomial (Fin n) (ZMod F.p)))] at h
+        -- recover explicit construction of x
+        simp [P1] at h3
+        obtain ⟨a, ahl, ahr⟩ := h3
+        simp [vecs] at ahl
+        obtain ⟨b, bhl, bhr⟩ := ahl
+        apply congr_arg (eval a.elem ·) at h
+        simp at h
+        suffices ∑ x ∈ s \ {x}, g x * (eval a.elem) (x : MvPolynomial (Fin n) (ZMod F.p)) = 0 by
+          rw [this] at h
+          simp at h
+          cases h
+          · assumption
+          · rename_i h
+            rw [←bhr, ←Char_Vec, ←ahr, ←bhr, ←Char_Vec] at h
+            have := MLE_equal_on_boolean_cube (R := ZMod F.p) (poly_f_Zp (Char_Vec b) F.L) (Char_Vec b).elem ?_
+            rw [←this] at h
+            have := eval_poly_f_Zp_self F b bhl
+            contradiction
+            intro i
+            simp
+            grind
+        have t1 : ∑ x ∈ (s \ {x}).filter (fun x ↦ ↑x ∈ P1), g x * (eval a.elem) (x : MvPolynomial (Fin n) (ZMod F.p)) = 0 := by
+          apply Finset.sum_eq_zero
+          intro y yh
+          simp at yh
+          obtain ⟨⟨yh1, yh2⟩,  yh3⟩ := yh
+          simp [P1] at yh3
+          obtain ⟨g, ghl, ghr⟩ := yh3
+          simp [vecs] at ghl
+          obtain ⟨h, hhl, hhr⟩ := ghl
+          simp
+          right
+          have hy1 := MLE_equal_on_boolean_cube (poly_f_Zp (Char_Vec h) F.L) a.elem ?_
+          have hy2 := eval_poly_f_Zp_other F b h bhl hhl ?_
+          rw [←ghr, ←hhr, ←Char_Vec, ←hy1, ←bhr, ←Char_Vec]
+          assumption
+          by_contra!
+          rw [this] at bhr
+          rw [bhr] at hhr
+          rw [hhr] at ahr
+          rw [ahr] at ghr
+          apply yh2
+          grind
+          intro i
+          simp [←bhr]
+          by_cases h_cases : i ∈ b
+          · right
+            assumption
+          · left
+            assumption
+        have t2 : ∑ x ∈ (s \ {x}).filter (fun x ↦ ↑x ∉ P1), g x * (eval a.elem) (x : MvPolynomial (Fin n) (ZMod F.p)) = 0 := by
+          apply Finset.sum_eq_zero
+          intro z hz
+          simp at hz
+          obtain ⟨⟨hz1, hz2⟩, hz3⟩ := hz
+          have : ↑z ∈ P2 := by
+            have hz4 : ↑z ∈ P1 ∨ ↑ z ∈ P2 := by grind
+            cases hz4
+            · contradiction
+            · assumption
+          simp [P2] at this
+          obtain ⟨i, ihl, ihr⟩ := this
+          simp [extras] at ihl
+          simp
+          right
+          apply congr_arg (eval a.elem ·) at ihr
+          have := MLE_equal_on_boolean_cube (poly_g_Zp i ↑F.k) (Char_Vec (R := ZMod F.p) b).elem ?_
+          rw [←bhr, ←Char_Vec, ←this] at ihr
+          rw [←bhr, ←Char_Vec, ←ihr]
+          clear * - ihl bhl
+          simp [poly_g_Zp]
+          left
+          have := F.k_bounded b bhl
+          rw [sub_eq_zero]
+          apply (ZMod.natCast_eq_natCast_iff' b.card F.k F.p).2
+          assumption
+        rw [←Finset.sum_filter_add_sum_filter_not (s \ {x}) (fun x ↦ (x : MvPolynomial (Fin n) (ZMod F.p)) ∈ P1)]
+        rw [t1, t2]
+        simp
+      have coef_b : ∀ x ∈ (s \  {j}).filter (fun x ↦ ↑x ∉ P1), g x = 0 := by
+        intro x hx
+        simp at hx
+        obtain ⟨⟨h1, h2⟩, h3⟩ := hx
+        rw [Finset.sum_eq_add_sum_diff_singleton h1 (fun j ↦ g j • (j : MvPolynomial (Fin n) (ZMod F.p)))] at h
+        -- use coef_a to show that the P1 part of the sum is trivial
+        -- separate the g x • ↑x
+        sorry
+      sorry
+
+        /-
+
+
+        rw [←Finset.sum_filter_add_sum_filter_not (s \ {x}) (fun x ↦ (x : MvPolynomial (Fin n) (ZMod F.p)) ∈ P1)]
+        have : ∑ x ∈ (s \ {x}).filter (fun x ↦ ↑x ∈ P1), g x * (eval a.elem) (x : MvPolynomial (Fin n) (ZMod F.p)) = 0 := by
+          apply Finset.sum_eq_zero
+          intro x xh
+          simp
+          right
+          simp at xh
+          obtain ⟨⟨h1, h2⟩, h3⟩ := xh
+          simp [P1] at h3
+          obtain ⟨e, hel, her⟩ := h3
+          simp [vecs] at hel
+          obtain ⟨f, hfl, hfr⟩ := hel
+          have := MLE_equal_on_boolean_cube (poly_f_Zp e F.L) a.elem ?_
+          rw [←her, ←this, ←bhr, ←hfr, ←Char_Vec, ←Char_Vec]
+          have := eval_poly_f_Zp_other F b f bhl hfl ?_
+          assumption
+          · by_contra!
+            rw [this] at bhr
+            rw [hfr] at bhr
+            rw [bhr] at her
+            rw [her] at ahr
+            clear * - h2 ahr
+            grind
+          · intro i
+            rw [←bhr]
+            simp
+            by_cases h_cases : i ∈ b
+            · right
+              assumption
+            · left
+              assumption
+
+
+        have : ∑ x ∈ (s \ {x}).filter (fun x ↦ ↑x ∉ P1), g x * (eval a.elem) (x : MvPolynomial (Fin n) (ZMod F.p)) = 0 := by
+          -- the polynomials in P2 also vanish if we apply an element from charvec P1
+          sorry
+        expose_names
+        rw [this, this_3]
+        simp
+      sorry
+        /-
+        rw [this] at h
+        apply Finset.sum_eq_zero
+        intro y yh
+
+        -- the sum cancels
+        have _h := hP1
+        simp [P1] at hP1
+        obtain ⟨a, hal, har⟩ := hP1
+        simp [vecs] at hal
+        obtain ⟨b, hbl, hbr⟩ := hal
+        rw [←Finset.sum_filter_add_sum_filter_not (s \ {j}) (fun x ↦ (x : MvPolynomial (Fin n) (ZMod F.p)) ∈ P1)] at h
+        apply congr_arg (eval a.elem ·) at h
+        simp at h
+        have : ∑ x ∈ (s \ {j}).filter (fun x ↦ ↑x ∈ P1), g x * (eval a.elem) (x : MvPolynomial (Fin n) (ZMod F.p)) = 0 := by
+          apply Finset.sum_eq_zero
+          intro x xh
+          simp
+          right
+          simp at xh
+          obtain ⟨⟨h1, h2⟩, h3⟩ := xh
+          simp [P1] at h3
+          obtain ⟨e, hel, her⟩ := h3
+          simp [vecs] at hel
+          obtain ⟨f, hfl, hfr⟩ := hel
+          have := MLE_equal_on_boolean_cube (poly_f_Zp e F.L) a.elem ?_
+          rw [←her, ←this, ←hfr, ←Char_Vec, ←hbr, ←Char_Vec]
+          have := eval_poly_f_Zp_other F b f hbl hfl ?_
+          assumption
+          · by_contra!
+            rw [this] at hbr
+            rw [hfr] at hbr
+            rw [hbr] at her
+            rw [her] at har
+            clear * - h2 har
+            grind
+          · intro i
+            rw [←hbr]
+            simp
+            by_cases h_cases : i ∈ b
+            · right
+              assumption
+            · left
+              assumption
+        rw [this] at h
+        have : ∑ x ∈ (s \ {j}).filter (fun x ↦ ↑x ∉ P1), g x * (eval a.elem) (x : MvPolynomial (Fin n) (ZMod F.p)) = 0 := by
+          -- the polynomials in P2 also vanish if we apply an element from charvec P1
+          sorry
+        rw [this] at h
+        have := MLE_equal_on_boolean_cube (n := n) (R := ZMod F.p) (poly_f_Zp a F.L) a.elem ?_
+        apply congr_arg (eval a.elem ·) at har
+        rw [←this] at har
+        rw [←har, ←hbr, ←Char_Vec] at h
+        have := eval_poly_f_Zp_self (n := n) F b hbl
+        simp only [add_zero, mul_eq_zero] at h
+        cases h
+        · assumption
+        · expose_names
+          contradiction
+        intro i
+        rw [←hbr]
+        simp
+        by_cases h_case : i ∈ b
+        · right
+          assumption
+        · left
+          assumption
+      sorry
+      -/
+
+      /-
       rcases Finset.mem_union.mp j.2 with hj_P1 | hj_P2
       · rw [Finset.sum_eq_add_sum_diff_singleton hj (fun j ↦ g j • (j : MvPolynomial (Fin n) (ZMod F.p)))] at h
         -- the sum cancels
@@ -481,6 +690,8 @@ theorem Test
         · left
           assumption
       · sorry
+      -/
+      -/
 
     have h_distinct : P1 ∩ P2 = ∅  := by
       by_contra hh
