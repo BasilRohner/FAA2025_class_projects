@@ -543,7 +543,8 @@ theorem Test
         have : ∃ ex, ∃ hex : ex ∈ extras,
           (∀ ey, ∃ hey : ey ∈ extras,
             g ⟨MLE (poly_g_Zp ey F.k), by simp [P2] ; right ; use ey⟩ = 0 ∨ ex.card ≤ ey.card)
-          ∧ g ⟨MLE (poly_g_Zp ex F.k), by simp [P2] ; right ; use ex⟩ ≠ 0 := by sorry
+          ∧ g ⟨MLE (poly_g_Zp ex F.k), by simp [P2] ; right ; use ex⟩ ≠ 0 := by
+          sorry
         obtain ⟨ex, h1, h2, h3⟩ := this
         let poly_ex := MLE (poly_g_Zp (p := F.p) ex F.k)
         let poly_ex_bundled : ↥(P1 ∪ P2) := ⟨poly_ex, by grind⟩
@@ -553,7 +554,29 @@ theorem Test
           · sorry
           · simp [poly_ex, P1]
             -- **TODO** assume the stuff and then use congruence to evaluate at x, lhs vanish while rhs dont
-            sorry
+            intro k hk
+            by_contra h_contra
+            simp [vecs] at hk
+            obtain ⟨aa, haal, haar⟩ := hk
+            rw [←haar, ←Char_Vec] at h_contra
+            apply congr_arg (eval (Char_Vec aa).elem ·) at h_contra
+            have this' := MLE_equal_on_boolean_cube (poly_f_Zp (p := F.p) (Char_Vec aa) F.L) (Char_Vec aa).elem ?_
+            have this'' := eval_poly_f_Zp_self F aa haal
+            rw [h_contra] at this'
+            rw [this'] at this''
+            apply this''
+            have this' := MLE_equal_on_boolean_cube (poly_g_Zp (p := F.p) ex ↑F.k) (Char_Vec aa).elem ?_
+            rw [←this']
+            simp [poly_g_Zp]
+            left
+            rw [sub_eq_zero, (ZMod.natCast_eq_natCast_iff' aa.card F.k F.p).2]
+            exact F.k_bounded aa haal
+            · intro i
+              simp
+              grind
+            · intro i
+              simp
+              grind
         -- **todo** extract the summand in jj with `rw [Finset.sum_eq_add_sum_diff_singleton <hypothesis> (fun j ↦ g j • (j : MvPolynomial (Fin n) (ZMod F.p)))] at h`
         rw [Finset.sum_eq_add_sum_diff_singleton this (fun j ↦ g j • (j : MvPolynomial (Fin n) (ZMod F.p)))] at h
         apply congr_arg (eval (Char_Vec ex).elem ·) at h
