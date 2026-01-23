@@ -430,7 +430,7 @@ theorem Test
       assumption
       assumption
       rw [linearIndependent_iff']
-      clear * - h_distinct
+      clear * - h_distinct hL3
       intro s g h j hj
 
       -- P1 coefficients 0
@@ -508,7 +508,7 @@ theorem Test
           have := MLE_equal_on_boolean_cube (poly_g_Zp i ↑F.k) (Char_Vec (R := ZMod F.p) b).elem ?_
           rw [←bhr, ←Char_Vec, ←this] at ihr
           rw [←bhr, ←Char_Vec, ←ihr]
-          clear * - ihl bhl
+          clear * - ihl bhl hL3
           simp [poly_g_Zp]
           left
           have := F.k_bounded b bhl
@@ -540,11 +540,91 @@ theorem Test
         by_contra h_contra
         push_neg at h_contra
         -- **todo** create the set of all elements in `extras` such that poly_g_ℤp
-        -- **todo** sample the min cardinality element jj
+        have : ∃ ex, ∃ hex : ex ∈ extras,
+          (∀ ey, ∃ hey : ey ∈ extras,
+            g ⟨MLE (poly_g_Zp ey F.k), by simp [P2] ; right ; use ey⟩ = 0 ∨ ex.card ≤ ey.card)
+          ∧ g ⟨MLE (poly_g_Zp ex F.k), by simp [P2] ; right ; use ex⟩ ≠ 0 := by sorry
+        obtain ⟨ex, h1, h2, h3⟩ := this
+        let poly_ex := MLE (poly_g_Zp (p := F.p) ex F.k)
+        let poly_ex_bundled : ↥(P1 ∪ P2) := ⟨poly_ex, by grind⟩
+        have : poly_ex_bundled ∈ {x ∈ s | ↑x ∉ P1} := by
+          simp [poly_ex_bundled]
+          constructor
+          · sorry
+          · simp [poly_ex, P1]
+            -- **TODO** assume the stuff and then use congruence to evaluate at x, lhs vanish while rhs dont
+            sorry
         -- **todo** extract the summand in jj with `rw [Finset.sum_eq_add_sum_diff_singleton <hypothesis> (fun j ↦ g j • (j : MvPolynomial (Fin n) (ZMod F.p)))] at h`
-        -- **todo** evaluate both sides and show that the large sum vanishes
-        -- **todo** since ↑jj is non-zero we conclude with the contradiction
-        sorry
+        rw [Finset.sum_eq_add_sum_diff_singleton this (fun j ↦ g j • (j : MvPolynomial (Fin n) (ZMod F.p)))] at h
+        apply congr_arg (eval (Char_Vec ex).elem ·) at h
+        simp at h
+        have : ∑ x ∈ {x ∈ s | ↑x ∉ P1} \ {poly_ex_bundled}, g x * (eval (Char_Vec ex).elem (x : MvPolynomial (Fin n) (ZMod F.p))) = 0 := by
+          apply Finset.sum_eq_zero
+          intro Y YH
+          simp at YH
+          obtain ⟨⟨H1, H2⟩,H3⟩ := YH
+          have : ↑Y ∈ P2 := by grind
+          simp [P2] at this
+          obtain ⟨X, XHL, XHR⟩ := this
+          have spec := h2 X
+          obtain ⟨_, spec⟩ := spec
+          rcases spec with h_case_1 | h_case_2
+          · simp
+            left
+            grind
+          · rw [←XHR]
+            simp
+            right
+            have := MLE_equal_on_boolean_cube (poly_g_Zp (p := F.p) X ↑F.k) (Char_Vec ex).elem ?_
+            rw [Char_Vec] at this
+            rw [←this]
+            rw [←Char_Vec]
+            simp [poly_g_Zp]
+            right
+            -- since ex.card < x.card
+            have : ∃ x ∈ X, x ∉ ex := by
+              have : ex ≠ X := by grind
+              clear * - this h_case_2
+              by_contra h
+              push_neg at h
+              have h_sub : X ⊆ ex := h
+              have h_eq : X = ex := Finset.eq_of_subset_of_card_le h_sub h_case_2
+              symm at h_eq
+              contradiction
+            obtain ⟨x', hx1', hx2'⟩ := this
+            apply Finset.prod_eq_zero
+            exact hx1'
+            simp
+            exact hx2'
+            intro i
+            simp
+            grind
+        rw [Char_Vec] at this
+        rw [this] at h
+        simp at h
+        rcases h with h1_case | h2_case
+        · contradiction
+        · have := MLE_equal_on_boolean_cube (poly_g_Zp (p := F.p) ex F.k) (Char_Vec ex).elem ?_
+          unfold Char_Vec at this
+          simp [poly_ex_bundled, poly_ex, ←this] at h2_case
+          unfold poly_g_Zp at h2_case
+          simp at h2_case
+          rcases h2_case with hh1 | hh2
+          · rw [sub_eq_zero] at hh1
+            apply (ZMod.natCast_eq_natCast_iff' ex.card F.k F.p).1 at hh1
+            rw [←hL3] at hh1
+            clear * - hh1 h1
+            simp [extras] at h1
+            have : ex.card % F.p ≤ ex.card := by
+              exact (Nat.mod_le ex.card F.p)
+            grw [←this] at h1
+            grind
+          · apply Finset.prod_eq_zero_iff.1 at hh2
+            obtain ⟨a, ha⟩ := hh2
+            simp at ha
+          intro i
+          simp
+          grind
       have : ↑j ∈ P1 ∨ ↑j ∈ P2 := by
         grind
       cases this <;> expose_names
