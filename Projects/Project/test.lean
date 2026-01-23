@@ -405,19 +405,39 @@ theorem Test
         omega
         omega
 
+    have h_distinct : P1 ∩ P2 = ∅  := by
+      by_contra hh
+      change P1 ∩ P2 ≠ ∅ at hh
+      rw [← Finset.nonempty_iff_ne_empty, Finset.Nonempty] at hh
+      obtain ⟨x, hx⟩ := hh
+      grw[Finset.mem_inter] at hx
+      obtain ⟨hx1, hx2⟩ := hx
+      -- Again some Aesop "blow up"
+      simp_all only [Char_Vec, Finset.mem_image, forall_exists_index, and_imp, forall_apply_eq_imp_iff₂, Finset.powerset_univ,
+        Finset.mem_filter, Finset.mem_univ, true_and, ne_eq, Finset.mem_union, exists_exists_and_eq_and, vecs, extras,
+        P1, P2]
+      obtain ⟨w, h_1⟩ := hx1
+      obtain ⟨w_1, h_2⟩ := hx2
+      obtain ⟨left, right⟩ := h_1
+      obtain ⟨left_1, right_1⟩ := h_2
+      subst right
+      --  Aesop "blow up" end
+      obtain ⟨z, hh ⟩ := h_P1 w left
+      grind
+
     have h_union : (P1 ∪ P2).card ≤ ∑ j ∈  Finset.range (F.s + 1), Nat.choose n j := by
       apply total_degree_bound_Zp
       assumption
       assumption
       rw [linearIndependent_iff']
-      clear * -
+      clear * - h_distinct
       intro s g h j hj
 
       -- P1 coefficients 0
-      have coef_a : ∀ x ∈ (s \  {j}).filter (fun x ↦ ↑x ∈ P1), g x = 0 := by
+      have coef_a : ∀ x ∈ s.filter (fun x ↦ ↑x ∈ P1), g x = 0 := by
         intro x hx
         simp at hx
-        obtain ⟨⟨h1, h2⟩, h3⟩ := hx
+        obtain ⟨h1, h3⟩ := hx
         rw [Finset.sum_eq_add_sum_diff_singleton h1 (fun j ↦ g j • (j : MvPolynomial (Fin n) (ZMod F.p)))] at h
         -- recover explicit construction of x
         simp [P1] at h3
@@ -495,42 +515,42 @@ theorem Test
           rw [sub_eq_zero]
           apply (ZMod.natCast_eq_natCast_iff' b.card F.k F.p).2
           assumption
+          intro i
+          simp
+          by_cases h_cases : i ∈ b
+          · right
+            assumption
+          · left
+            assumption
         rw [←Finset.sum_filter_add_sum_filter_not (s \ {x}) (fun x ↦ (x : MvPolynomial (Fin n) (ZMod F.p)) ∈ P1)]
         rw [t1, t2]
         simp
-      have coef_b : ∀ x ∈ (s \  {j}).filter (fun x ↦ ↑x ∉ P1), g x = 0 := by
+      have coef_b : ∀ x ∈ s.filter (fun x ↦ ↑x ∉ P1), g x = 0 := by
         intro x hx
         simp at hx
-        obtain ⟨⟨h1, h2⟩, h3⟩ := hx
+        obtain ⟨h1, h3⟩ := hx
         rw [Finset.sum_eq_add_sum_diff_singleton h1 (fun j ↦ g j • (j : MvPolynomial (Fin n) (ZMod F.p)))] at h
         -- use coef_a to show that the P1 part of the sum is trivial
         -- separate the g x • ↑x
         sorry
-      sorry
-
-
-    have h_distinct : P1 ∩ P2 = ∅  := by
-      by_contra hh
-      change P1 ∩ P2 ≠ ∅ at hh
-      rw [← Finset.nonempty_iff_ne_empty, Finset.Nonempty] at hh
-      obtain ⟨x, hx⟩ := hh
-      grw[Finset.mem_inter] at hx
-      obtain ⟨hx1, hx2⟩ := hx
-      -- Again some Aesop "blow up"
-      simp_all only [Char_Vec, Finset.mem_image, forall_exists_index, and_imp, forall_apply_eq_imp_iff₂, Finset.powerset_univ,
-        Finset.mem_filter, Finset.mem_univ, true_and, ne_eq, Finset.mem_union, exists_exists_and_eq_and, vecs, extras,
-        P1, P2]
-      obtain ⟨w, h_1⟩ := hx1
-      obtain ⟨w_1, h_2⟩ := hx2
-      obtain ⟨left, right⟩ := h_1
-      obtain ⟨left_1, right_1⟩ := h_2
-      subst right
-      --  Aesop "blow up" end
-      obtain ⟨z, hh ⟩ := h_P1 w left
-      grind
+      have : ↑j ∈ P1 ∨ ↑j ∈ P2 := by
+        grind
+      cases this <;> expose_names
+      · have := coef_a j
+        apply this
+        grind
+      · have := coef_b j
+        apply this
+        by_contra!
+        simp at this
+        apply this at hj
+        have : ↑j ∈ P1 ∩ P2 := by
+          grind
+        have contra := h_distinct
+        grind
 
     have h_card : P1.card + P2.card = (P1 ∪ P2).card := by
-      grw[Finset.card_union,h_distinct, Finset.card_empty, Nat.sub_zero]
+      grw[Finset.card_union, h_distinct, Finset.card_empty, Nat.sub_zero]
 
 
     have h_extra : P2.card = ∑ j ∈  Finset.range (F.s), Nat.choose n j  := by
