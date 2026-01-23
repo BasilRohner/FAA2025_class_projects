@@ -526,12 +526,24 @@ theorem Test
         rw [t1, t2]
         simp
       have coef_b : ∀ x ∈ s.filter (fun x ↦ ↑x ∉ P1), g x = 0 := by
-        intro x hx
-        simp at hx
-        obtain ⟨h1, h3⟩ := hx
-        rw [Finset.sum_eq_add_sum_diff_singleton h1 (fun j ↦ g j • (j : MvPolynomial (Fin n) (ZMod F.p)))] at h
-        -- use coef_a to show that the P1 part of the sum is trivial
-        -- separate the g x • ↑x
+        rw [←Finset.sum_filter_add_sum_filter_not (s) (fun x ↦ (x : MvPolynomial (Fin n) (ZMod F.p)) ∈ P1)] at h
+        have t2 : ∑ x ∈ s.filter (fun x ↦ ↑x ∈ P1), g x • (x : MvPolynomial (Fin n) (ZMod F.p)) = 0 := by
+          apply Finset.sum_eq_zero
+          intro x xh
+          simp
+          left
+          apply coef_a
+          assumption
+        rw [t2] at h
+        clear coef_a t2
+        simp at h
+        by_contra h_contra
+        push_neg at h_contra
+        -- **todo** create the set of all elements in `extras` such that poly_g_ℤp
+        -- **todo** sample the min cardinality element jj
+        -- **todo** extract the summand in jj with `rw [Finset.sum_eq_add_sum_diff_singleton <hypothesis> (fun j ↦ g j • (j : MvPolynomial (Fin n) (ZMod F.p)))] at h`
+        -- **todo** evaluate both sides and show that the large sum vanishes
+        -- **todo** since ↑jj is non-zero we conclude with the contradiction
         sorry
       have : ↑j ∈ P1 ∨ ↑j ∈ P2 := by
         grind

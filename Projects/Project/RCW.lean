@@ -116,6 +116,7 @@ lemma P1_card_eq {n : ℕ} (F : k_L_Family n) (hl : ∀ l ∈ F.L, l < F.k) :
       -- By the properties of the polynomials and their evaluations, if MLE(poly v F.L) = MLE(poly w F.L), then v and w must be the smae vector.
       have h_eval_eq : ∀ z : (Fin n → ℚ), (∀ i : Fin n, z i = 0 ∨ z i = 1) → eval z (poly_f_Q v F.L) = eval z (poly_f_Q w F.L) := by
         intro z hz; have := MLE_equal_on_boolean_cube ( poly_f_Q v F.L ) z hz; have := MLE_equal_on_boolean_cube ( poly_f_Q w F.L ) z hz; aesop;
+
       -- Since $v$ and $w$ are char vectors of sets in $F$, and $F$ is a $k$-uniform family, $v$ and $w$ must be distinct sets.
       obtain ⟨S, hS⟩ : ∃ S ∈ F.elems, v = Char_Vec S := by
         unfold vecs at hv; aesop;
