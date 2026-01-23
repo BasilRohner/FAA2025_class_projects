@@ -412,76 +412,75 @@ theorem Test
       rw [linearIndependent_iff']
       clear * -
       intro s g h j hj
-<<<<<<< HEAD
       -- if j ∈ P1 then we evaluate at j to cancel all other terms
-      -- **todo**: should have a theorem that for all coefficients in P1 triviality holds, then can use in the second step
       rcases Finset.mem_union.mp j.2 with hj_P1 | hj_P2
       · rw [Finset.sum_eq_add_sum_diff_singleton hj (fun j ↦ g j • (j : MvPolynomial (Fin n) (ZMod F.p)))] at h
         -- the sum cancels
-        have h_sum_zero : ∑ x ∈ s \ {j}, g x • (x : MvPolynomial (Fin n) (ZMod F.p)) = 0 := by
-          -- this we show by distinguishing the summands in P1 and P2
-          rw [←Finset.sum_filter_add_sum_filter_not (s \ {j}) (fun x ↦ (x : MvPolynomial (Fin n) (ZMod F.p)) ∈ P1)]
-          -- show for summands in P1
-          have h_sum_P1 : ∑ x ∈ (s \ {j}).filter (fun x ↦ ↑x ∈ P1), g x • (x : MvPolynomial (Fin n) (ZMod F.p)) = 0 := by
-            -- show that all summands are zero
-            apply Finset.sum_eq_zero
-            intro x xh
-            simp at xh
-            obtain ⟨⟨h1, h2⟩, h3⟩ := xh
-            simp [P1] at h3
-            obtain ⟨c, hcl, hcr⟩ := h3
-            simp [vecs] at hcl
-            obtain ⟨d, hdl, hdr⟩ := hcl
-            simp [←hdr] at hcr
-            rw [←Char_Vec] at hcr
-            simp
-            sorry
-            -- now need to evaluate hcr at a different characteristic vector
-            -- then we find that lhs is 0 while rhs is non-zero
-          -- show for summands in P2
-          have h_sum_P2 : ∑ x ∈ (s \ {j}).filter (fun x ↦ ↑x ∉ P1), g x • (x : MvPolynomial (Fin n) (ZMod F.p)) = 0 := by
-            -- show that all summands are zero
-            apply Finset.sum_eq_zero
-            intro x xh
-            simp at xh
-            obtain ⟨⟨h1, h2⟩, h3⟩ := xh
-            simp [P1] at h3
-            -- obtain ⟨c, hc⟩ := h3
-            sorry
-          rw [h_sum_P1, h_sum_P2]
+        have _h := hj_P1
+        simp [P1] at hj_P1
+        obtain ⟨a, hal, har⟩ := hj_P1
+        simp [vecs] at hal
+        obtain ⟨b, hbl, hbr⟩ := hal
+        rw [←Finset.sum_filter_add_sum_filter_not (s \ {j}) (fun x ↦ (x : MvPolynomial (Fin n) (ZMod F.p)) ∈ P1)] at h
+        apply congr_arg (eval a.elem ·) at h
+        simp at h
+        -- show that sum over P1 vanishes
+        -- **todo**: should have a theorem that for all coefficients in P1 triviality holds, then can use in the second step
+        -- **todo** then also save some time
+        have : ∑ x ∈ (s \ {j}).filter (fun x ↦ ↑x ∈ P1), g x * (eval a.elem) (x : MvPolynomial (Fin n) (ZMod F.p)) = 0 := by
+          apply Finset.sum_eq_zero
+          intro x xh
           simp
-        simp [h_sum_zero] at h
+          right
+          simp at xh
+          obtain ⟨⟨h1, h2⟩, h3⟩ := xh
+          simp [P1] at h3
+          obtain ⟨e, hel, her⟩ := h3
+          simp [vecs] at hel
+          obtain ⟨f, hfl, hfr⟩ := hel
+          have := MLE_equal_on_boolean_cube (poly_f_Zp e F.L) a.elem ?_
+          rw [←her, ←this, ←hfr, ←Char_Vec, ←hbr, ←Char_Vec]
+          have := eval_poly_f_Zp_other F b f hbl hfl ?_
+          assumption
+          · by_contra!
+            rw [this] at hbr
+            rw [hfr] at hbr
+            rw [hbr] at her
+            rw [her] at har
+            clear * - h2 har
+            grind
+          · intro i
+            rw [←hbr]
+            simp
+            by_cases h_cases : i ∈ b
+            · right
+              assumption
+            · left
+              assumption
+        rw [this] at h
+        have : ∑ x ∈ (s \ {j}).filter (fun x ↦ ↑x ∉ P1), g x * (eval a.elem) (x : MvPolynomial (Fin n) (ZMod F.p)) = 0 := by
+          -- the polynomials in P2 also vanish if we apply an element from charvec P1
+          sorry
+        rw [this] at h
+        have := MLE_equal_on_boolean_cube (n := n) (R := ZMod F.p) (poly_f_Zp a F.L) a.elem ?_
+        apply congr_arg (eval a.elem ·) at har
+        rw [←this] at har
+        rw [←har, ←hbr, ←Char_Vec] at h
+        have := eval_poly_f_Zp_self (n := n) F b hbl
+        simp only [add_zero, mul_eq_zero] at h
         cases h
         · assumption
-        · by_contra!
-          expose_names
-          clear * - hj_P1 h
-          rw [h] at hj_P1
-          simp [P1, vecs] at hj_P1
-          obtain ⟨a, hal, har⟩ := hj_P1
-          rw [←Char_Vec] at har
-          have := nontrivial_Zp F.p_prime
-          have := MLE_equal_on_boolean_cube (n := n) (R := ZMod F.p) (poly_f_Zp (Char_Vec a) F.L) (Char_Vec (R := ZMod F.p) a).elem ?_
-          apply congr_arg (eval (Char_Vec a).elem ·) at har
-          rw [←this] at har
-          -- use polynomial_f_ℤp identity
-          sorry
-      -- if j ∈ P2
-      · -- TODO: Here need to leverage the fact that we have shown before that tha α coefficients are 0
-=======
-      rw [Finset.sum_eq_add_sum_diff_singleton hj (fun x ↦ g x • (x : MvPolynomial (Fin n) (ZMod F.p)))] at h
-      have : ∑ x ∈ s \ {j}, g x • (x : MvPolynomial (Fin n) (ZMod F.p)) = 0 := by
-        apply Finset.sum_eq_zero
-        intro x hx
+        · expose_names
+          contradiction
+        intro i
+        rw [←hbr]
         simp
-        sorry
-      rw [this] at h
-      simp at h
-      cases h
-      · assumption
-      · expose_names
->>>>>>> 08506113cbe19f76cc66330bc107500869ce1f10
-        sorry
+        by_cases h_case : i ∈ b
+        · right
+          assumption
+        · left
+          assumption
+      · sorry
 
     have h_distinct : P1 ∩ P2 = ∅  := by
       by_contra hh
