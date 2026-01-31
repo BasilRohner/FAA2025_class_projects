@@ -16,7 +16,7 @@ import Mathlib.LinearAlgebra.Dimension.StrongRankCondition
 import Projects.Project.Families
 import Projects.Project.MLE
 
-set_option maxHeartbeats 400000000 -- Sadly needed
+set_option maxHeartbeats 400000000 -- Sadly needed, very sad
 set_option linter.unusedSimpArgs false
 open MvPolynomial
 
