@@ -260,7 +260,8 @@ theorem P1_P2_linear_independent {n : ℕ} (F : k_L_Family n) (hl : ∀ l ∈ F.
           use z;
           simp_all +decide [ P1_family, P2_family ];
           rintro q ( ⟨ w, hw, rfl ⟩ | ⟨ i, hi, rfl ⟩ ) hq <;> [ exact hz3 _ hw ( by aesop ) ; exact hz2 _ hi ];
-        replace hc := congr_arg ( MvPolynomial.eval z ) hc.2; simp_all +decide [ Finset.sum_eq_single p ] ;
+        replace hc := congr_arg ( MvPolynomial.eval z ) hc.2
+        simp_all +decide [ Finset.sum_eq_single p ] ;
       -- Let $p \in P2_family F$ be a polynomial with non-zero coefficient corresponding to a set $I \in \text{extras}$ with minimal cardinality.
       obtain ⟨I, hI⟩ : ∃ I ∈ extras F.s, c (MLE (poly_g_Q I (F.k : ℚ))) ≠ 0 ∧ ∀ J ∈ extras F.s, J.card < I.card → c (MLE (poly_g_Q J (F.k : ℚ))) = 0 := by
         obtain ⟨I, hI⟩ : ∃ I ∈ extras F.s, c (MLE (poly_g_Q I (F.k : ℚ))) ≠ 0 := by
